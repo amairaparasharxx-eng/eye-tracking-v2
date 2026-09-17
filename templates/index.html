@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Eye Tracking</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <h1>Eye Tracking Assessment</h1>
+      <p class="notice">This prototype is for measurement/research purposes only. It is not a medical test and does not diagnose a condition.</p>
+    </header>
+
+    <section class="card">
+      <div class="video-wrap">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
+      </div>
+      <div class="controls">
+        <button id="start" class="primary">Start camera</button>
+        <button id="stop" disabled>Stop camera</button>
+        <span id="status">Camera is off.</span>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Live measurements</h2>
+        <div class="metrics">
+          <div><span>Right fissure</span><strong id="r-fissure">—</strong></div>
+          <div><span>Left fissure</span><strong id="l-fissure">—</strong></div>
+          <div><span>Right MRD1</span><strong id="r-mrd1">—</strong></div>
+          <div><span>Left MRD1</span><strong id="l-mrd1">—</strong></div>
+          <div><span>Head yaw</span><strong id="yaw">—</strong></div>
+          <div><span>Head pitch</span><strong id="pitch">—</strong></div>
+          <div><span>Head roll</span><strong id="roll">—</strong></div>
+          <div><span>Quality</span><strong id="quality">—</strong></div>
+        </div>
+      </div>
+
+      <div class="card instructions">
+        <h2>Before you start</h2>
+        <ul>
+          <li>Use a well-lit room with light in front of you.</li>
+          <li>Keep your face centred and reasonably close to the camera.</li>
+          <li>Keep the camera steady.</li>
+          <li>Allow camera access when your browser asks.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
