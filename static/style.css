@@ -1,0 +1,23 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, sans-serif; background: #f5f7fa; color: #101010; }
+.shell { max-width: 1200px; margin: 0 auto; padding: 28px 20px 50px; }
+h1 { margin: 0 0 8px; font-size: 34px; }
+h2 { margin-top: 0; }
+.notice { background: #fff4f4; border-left: 5px solid #b32020; padding: 12px 14px; line-height: 1.5; }
+.card { background: white; border: 1px solid #d9dee7; border-radius: 12px; padding: 18px; margin-top: 18px; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+.video-wrap { position: relative; width: 100%; max-width: 960px; margin: auto; background: #151515; border-radius: 8px; overflow: hidden; }
+video, canvas { display: block; width: 100%; height: auto; }
+canvas { position: absolute; inset: 0; pointer-events: none; }
+.controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+button { border: 0; border-radius: 8px; padding: 13px 20px; font-size: 16px; font-weight: 700; cursor: pointer; }
+button.primary { background: #1a4d8f; color: white; }
+button:not(.primary) { background: #e4e9f0; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+#status { font-weight: 600; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.metrics div { background: #f6f8fb; border-radius: 8px; padding: 12px; }
+.metrics span { display: block; color: #555; font-size: 14px; }
+.metrics strong { display: block; font-size: 22px; margin-top: 4px; }
+.instructions li { margin: 10px 0; line-height: 1.4; }
+@media (max-width: 760px) { .grid { grid-template-columns: 1fr; } h1 { font-size: 28px; } }
