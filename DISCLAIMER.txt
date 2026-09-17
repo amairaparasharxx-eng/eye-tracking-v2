@@ -1,0 +1,90 @@
+EYE SIGN RECORDER - DISCLAIMER
+============================================================
+
+PLEASE READ THIS BEFORE YOU START
+
+This program is NOT a medical test.
+It cannot diagnose myasthenia gravis or any other illness.
+
+What it actually does:
+  - It guides you through a set of simple eye movements.
+  - It uses your camera to measure things like how far your
+    eyelid droops, and how steady your eyes are.
+  - It saves those measurements so you can show them to your
+    doctor, and so you can compare one day to another.
+
+What it CANNOT do:
+  - It cannot tell you whether you are ill.
+  - It cannot tell you whether you are getting better or worse.
+  - It cannot replace an examination by a doctor.
+  - It cannot be used to decide whether to change medication.
+
+The measurements can be wrong. Poor lighting, glasses, a moving
+camera, tiredness, or simply sitting closer to the screen can all
+change the numbers without anything changing about you.
+
+GET MEDICAL HELP IMMEDIATELY - do not use this program - if you have:
+  - Trouble breathing, or shortness of breath when lying flat
+  - Trouble swallowing, or choking on food or drink
+  - A weak or breathless voice that is getting worse
+  - Sudden severe weakness in your neck, arms or legs
+  - Sudden double vision with a bad headache, or a droopy eyelid
+    with a large pupil on the same side
+
+These can be emergencies. This program will not detect them.
+
+Your video is not uploaded anywhere. It is processed on this
+computer only. By default no video is saved - only numbers.
+
+Privacy:
+  - Video frames are analysed in memory and then discarded.
+  - Only numeric measurements are written to disk, in the folder you
+    choose. Nothing is sent over the internet.
+  - If you turn on 'save video clips', those clips stay on this
+    computer. They are identifiable. Protect them like medical records.
+
+------------------------------------------------------------
+WHAT APPEARS ON EVERY REPORT
+------------------------------------------------------------
+
+This document was produced by a consumer webcam program. It is a
+RECORD OF AN OBSERVATION SESSION, not a clinical investigation.
+
+The measurements have not been validated against any clinical
+standard. They are not comparable to results from a hospital
+eye-movement laboratory, Hess chart, tensilon test, ice-pack test,
+repetitive nerve stimulation, single-fibre EMG, or antibody testing.
+
+No value in this document should be used on its own to support or
+exclude any diagnosis, or to guide treatment.
+
+------------------------------------------------------------
+KNOWN LIMITATION OF EACH ITEM
+------------------------------------------------------------
+
+fatigable_ptosis:
+  Eyelid position also falls with ordinary tiredness, dry eyes, age-related lid changes and sleepiness. A downward trend here is not specific to anything.
+
+cogan_lid_twitch:
+  A webcam running at 30 frames per second can easily miss a real lid twitch, and can easily invent one out of a blink. Absence of a twitch here means nothing at all.
+
+curtain_sign:
+  This item needs another person to hold an eyelid up. Any pressure on the eye or the brow changes the result. Never press on an eye.
+
+peek_sign:
+  Gentle closure means gentle. If you squeeze your eyes shut the test is invalid. Voluntary relaxation also reopens the eyes.
+
+ophthalmoparesis:
+  This estimates eye position from a flat camera image. It cannot measure a true ocular ductions deficit and cannot identify which muscle or nerve is involved.
+
+fatigable_saccades:
+  Peak saccade velocity cannot be measured properly below about 120 frames per second. On a normal webcam only large amplitude changes are meaningful, and even those are rough.
+
+gaze_holding:
+  Small camera shake, head movement and image noise all look like eye drift to this program.
+
+head_posture:
+  A head tilt has many causes, including habit, neck problems, hearing, and the position of your screen.
+
+variability:
+  Differences between sessions are dominated by how you sat, the lighting, and the camera - usually far more than by your eyes.
