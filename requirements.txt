@@ -4,3 +4,4 @@ Gunicorn>=23,<27
 
 # Existing analysis dependencies
 numpy>=1.24
+opencv-python-headless>=4.8
