@@ -3,52 +3,94 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Eye Tracking</title>
+  <title>Eye Movement Observation</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <main class="shell">
-    <header>
-      <h1>Eye Tracking Assessment</h1>
-      <p class="notice">This prototype is for measurement/research purposes only. It is not a medical test and does not diagnose a condition.</p>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">CAMERA-ASSISTED PROTOTYPE</p>
+        <h1>Eye Movement Observation</h1>
+        <p class="lead">A guided camera session that records observable eye and head-movement changes and summarizes the session at the end.</p>
+      </div>
+      <div class="session-badge" id="step-badge">Ready</div>
     </header>
 
-    <section class="card">
+    <section class="card safety-card">
+      <strong>Important:</strong> This is a research/prototype tool, not a diagnostic test. Camera measurements can be affected by lighting, camera position, face angle, glasses, and tracking errors. Several clinical signs require a clinician's examination and cannot be confirmed by a webcam alone.
+    </section>
+
+    <section class="card protocol-card">
+      <div class="progress-row">
+        <div>
+          <p class="eyebrow">GUIDED SESSION</p>
+          <h2 id="step-title">Ready to begin</h2>
+        </div>
+        <span id="progress-text">0 / 8</span>
+      </div>
+      <div class="progress"><div id="progress-bar"></div></div>
+      <p id="instruction" class="instruction">Start the camera, then follow the on-screen instructions. Keep your head as still as comfortably possible unless the instruction asks you to move it.</p>
+      <div class="target" id="target">Look straight at the camera</div>
+    </section>
+
+    <section class="card camera-card">
       <div class="video-wrap">
         <video id="video" autoplay playsinline muted></video>
         <canvas id="overlay"></canvas>
+        <div id="countdown" class="countdown hidden"></div>
       </div>
       <div class="controls">
         <button id="start" class="primary">Start camera</button>
+        <button id="next" class="primary" disabled>Begin session</button>
         <button id="stop" disabled>Stop camera</button>
         <span id="status">Camera is off.</span>
       </div>
     </section>
 
-    <section class="grid">
-      <div class="card">
-        <h2>Live measurements</h2>
-        <div class="metrics">
-          <div><span>Right fissure</span><strong id="r-fissure">—</strong></div>
-          <div><span>Left fissure</span><strong id="l-fissure">—</strong></div>
-          <div><span>Right MRD1</span><strong id="r-mrd1">—</strong></div>
-          <div><span>Left MRD1</span><strong id="l-mrd1">—</strong></div>
-          <div><span>Head yaw</span><strong id="yaw">—</strong></div>
-          <div><span>Head pitch</span><strong id="pitch">—</strong></div>
-          <div><span>Head roll</span><strong id="roll">—</strong></div>
-          <div><span>Quality</span><strong id="quality">—</strong></div>
+    <section class="card observation-card">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">LIVE OBSERVATIONS</p>
+          <h2>Session data</h2>
+        </div>
+        <span class="live-dot" id="live-dot">Waiting</span>
+      </div>
+      <div class="metrics">
+        <div><span>Eye opening</span><strong id="eye-opening">—</strong></div>
+        <div><span>Left/right asymmetry</span><strong id="asymmetry">—</strong></div>
+        <div><span>Horizontal gaze</span><strong id="gaze-x">—</strong></div>
+        <div><span>Vertical gaze</span><strong id="gaze-y">—</strong></div>
+        <div><span>Head yaw</span><strong id="yaw">—</strong></div>
+        <div><span>Head pitch</span><strong id="pitch">—</strong></div>
+        <div><span>Head roll</span><strong id="roll">—</strong></div>
+        <div><span>Tracking quality</span><strong id="quality">—</strong></div>
+      </div>
+    </section>
+
+    <section id="results" class="card results-card hidden">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">SESSION COMPLETE</p>
+          <h2>Observed / not observed summary</h2>
+        </div>
+        <span id="total-score" class="score-pill">0 / 90</span>
+      </div>
+
+      <div class="summary-layout">
+        <div class="pie-wrap">
+          <div id="pie" class="pie"></div>
+          <div class="pie-center"><strong id="observed-count">0</strong><span>observed</span></div>
+        </div>
+        <div class="legend">
+          <div><span class="legend-dot observed"></span>Observed <strong id="legend-observed">0</strong></div>
+          <div><span class="legend-dot not-observed"></span>Not observed <strong id="legend-not-observed">0</strong></div>
         </div>
       </div>
 
-      <div class="card instructions">
-        <h2>Before you start</h2>
-        <ul>
-          <li>Use a well-lit room with light in front of you.</li>
-          <li>Keep your face centred and reasonably close to the camera.</li>
-          <li>Keep the camera steady.</li>
-          <li>Allow camera access when your browser asks.</li>
-        </ul>
-      </div>
+      <div id="result-list" class="result-list"></div>
+      <p class="result-note">Scores are prototype observation levels only: <strong>0 = none</strong>, <strong>5 = not prominent</strong>, <strong>10 = prominent</strong>. They are not a validated clinical score and should not be interpreted as a diagnosis or probability of disease.</p>
+      <button id="restart" class="primary">Run another session</button>
     </section>
   </main>
 
