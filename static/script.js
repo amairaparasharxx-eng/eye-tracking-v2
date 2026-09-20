@@ -32,7 +32,7 @@ const STEPS = [
 let stream = null, landmarker = null, running = false, sessionActive = false;
 let stepIndex = -1, stepStarted = 0, lastVideoTime = -1;
 let mpFaceLandmarker = null, mpFileset = null, samples = [], stepSamples = [];
-let phase = 1, phaseStarted = 0;
+let phase = 1, phaseStarted = 0, lastGazeX = null;
 
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
 const sd = a => { if (a.length < 2) return 0; const m = mean(a); return Math.sqrt(mean(a.map(x => (x - m) ** 2))); };
@@ -60,10 +60,12 @@ function updateLive(f){
   document.getElementById("asymmetry").textContent=(f.asym*100).toFixed(1)+"%";
   document.getElementById("gaze-x").textContent=f.gazeX.toFixed(2);
   document.getElementById("gaze-y").textContent=f.gazeY.toFixed(2);
-  document.getElementById("yaw").textContent=((f.headX-.5)*100).toFixed(1);
-  document.getElementById("pitch").textContent=((f.headY-.5)*100).toFixed(1);
+  document.getElementById("yaw").textContent=((f.headX-.5)*100).toFixed(1)+"%";
+  document.getElementById("saccades").textContent=lastGazeX===null?"—":Math.abs(f.gazeX-lastGazeX).toFixed(3);
+  document.getElementById("pitch").textContent=((f.headY-.5)*100).toFixed(1)+"%";
   document.getElementById("roll").textContent=f.asym.toFixed(2);
-  document.getElementById("quality").textContent="Good";
+  document.getElementById("quality").textContent="Tracking OK";
+  lastGazeX=f.gazeX;
 }
 
 async function loadMediaPipe(){
@@ -124,7 +126,7 @@ async function startCamera(){
     status.textContent=`Could not start camera: ${err.message||"allow camera access and try again."}`;
   }
 }
-function startSession(){if(!running)return;samples=[];sessionActive=true;nextBtn.disabled=true;setStep(0);}
+function startSession(){if(!running)return;samples=[];lastGazeX=null;sessionActive=true;nextBtn.disabled=true;setStep(0);}
 
 function finishSession(){
   sessionActive=false;nextBtn.disabled=true;progressBar.style.width="100%";progressText.textContent=`${STEPS.length} / ${STEPS.length}`;stepBadge.textContent="Complete";
@@ -134,23 +136,53 @@ function rangeFor(step,key){const a=samples.filter(x=>x.step===step).map(x=>x[ke
 function scoreObserved(value,low,high){return value>=high?10:value>=low?5:0;}
 
 function analyze(){
-  const base=rangeFor(0,"open")?.mean||mean(samples.map(x=>x.open)), up=rangeFor(1,"open"), downUp=samples.filter(x=>x.step===2), close=rangeFor(3,"open"), side=samples.filter(x=>x.step===4), hold=rangeFor(5,"gazeX"), comp=rangeFor(6,"headX"), repeat=samples.filter(x=>x.step===7);
+  const base=rangeFor(0,"open")?.mean||mean(samples.map(x=>x.open));
+  const up=rangeFor(1,"open");
+  const downUp=samples.filter(x=>x.step===2);
+  const close=rangeFor(3,"open");
+  const side=samples.filter(x=>x.step===4);
+  const hold=rangeFor(5,"gazeX");
+  const comp=rangeFor(6,"headX");
+  const repeat=samples.filter(x=>x.step===7);
+
   const fatigueDrop=up?Math.max(0,base-(up.mean||base)):0;
   const coganChange=downUp.length?Math.max(0,Math.max(...downUp.map(x=>x.open))-base):0;
   const curtainDrop=downUp.length?Math.max(0,base-downUp[downUp.length-1].open):0;
   const peekOpen=close?.max||0;
-  const left=side.filter(x=>x.gazeX<.45).map(x=>x.gazeX), right=side.filter(x=>x.gazeX>.55).map(x=>x.gazeX);
-  const gazeRangeL=left.length?Math.abs(Math.min(...left)-.5):0, gazeRangeR=right.length?Math.abs(Math.max(...right)-.5):0;
-  const gazeAsym=Math.abs(gazeRangeL-gazeRangeR), holdInstability=hold?.sd||0, headComp=comp?Math.abs(comp.max-comp.min):0, repeatVar=repeat.length?sd(repeat.map(x=>x.open)):0;
+
+  const left=side.filter(x=>x.gazeX<.45).map(x=>x.gazeX);
+  const right=side.filter(x=>x.gazeX>.55).map(x=>x.gazeX);
+  const gazeRangeL=left.length?Math.abs(Math.min(...left)-.5):0;
+  const gazeRangeR=right.length?Math.abs(Math.max(...right)-.5):0;
+  const gazeAsym=Math.abs(gazeRangeL-gazeRangeR);
+
+  const saccadeSteps=[];
+  for(let i=1;i<side.length;i++){
+    const dt=Math.max(.016,side[i].t-side[i-1].t);
+    const delta=Math.abs(side[i].gazeX-side[i-1].gazeX);
+    if(delta>.025) saccadeSteps.push({delta,velocity:delta/dt,t:side[i].t});
+  }
+  const midpoint=side.length?side[Math.floor(side.length/2)].t:0;
+  const firstSaccades=saccadeSteps.filter(x=>x.t<=midpoint);
+  const secondSaccades=saccadeSteps.filter(x=>x.t>midpoint);
+  const firstAmp=firstSaccades.length?mean(firstSaccades.map(x=>x.delta)):0;
+  const secondAmp=secondSaccades.length?mean(secondSaccades.map(x=>x.delta)):0;
+  const saccadeFatigue=firstAmp>0?Math.max(0,(firstAmp-secondAmp)/firstAmp):0;
+
+  const holdInstability=hold?.sd||0;
+  const headComp=comp?Math.abs(comp.max-comp.min):0;
+  const repeatVar=repeat.length?sd(repeat.map(x=>x.open)):0;
+
   return [
     {name:"Fatigable ptosis",score:scoreObserved(fatigueDrop,.04,.10),detail:`Eye-opening change during sustained upgaze: ${(fatigueDrop*100).toFixed(1)}%`},
     {name:"Cogan's lid-twitch",score:scoreObserved(coganChange,.035,.08),detail:`Transient eye-opening change after the gaze transition: ${(coganChange*100).toFixed(1)}%`},
     {name:"Curtain sign (enhanced ptosis)",score:scoreObserved(curtainDrop,.04,.10),detail:`Change in eye opening after the downgaze phase: ${(curtainDrop*100).toFixed(1)}%`},
     {name:"Peek sign",score:scoreObserved(peekOpen,.035,.08),detail:`Maximum residual eye opening during the closure task: ${(peekOpen*100).toFixed(1)}%`},
     {name:"Variable/asymmetric ophthalmoparesis",score:scoreObserved(gazeAsym,.08,.16),detail:`Difference between measured left/right gaze ranges: ${(gazeAsym*100).toFixed(1)}%`},
+    {name:"Fatigable saccades",score:scoreObserved(saccadeFatigue,.20,.40),detail:`Change in average gaze-jump amplitude from the first to second half of the gaze task: ${(saccadeFatigue*100).toFixed(1)}%`},
     {name:"Gaze-holding instability",score:scoreObserved(holdInstability,.025,.06),detail:`Standard deviation of horizontal gaze position while holding: ${holdInstability.toFixed(3)}`},
     {name:"Diplopia-related head tilt/turn compensation",score:scoreObserved(headComp,.06,.14),detail:`Head-position excursion during the compensation task: ${(headComp*100).toFixed(1)}%`},
-    {name:"Intra-exam variability",score:scoreObserved(repeatVar,.02,.05),detail:`Variation in eye opening during the repeatability task: ${(repeatVar*100).toFixed(1)}%`}
+    {name:"Inter-visit or intra-exam variability itself",score:scoreObserved(repeatVar,.02,.05),detail:`Variation in eye opening during the repeatability task: ${(repeatVar*100).toFixed(1)}%`}
   ];
 }
 
