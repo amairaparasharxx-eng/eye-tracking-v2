@@ -6,7 +6,7 @@
   <title>Eye Movement Observation</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
-    .hero,.progress-row,.section-heading,.result-top{display:flex;justify-content:space-between;align-items:center;gap:16px}.hero{align-items:flex-start}.eyebrow{margin:0 0 5px;font-size:11px;font-weight:800;letter-spacing:1.4px}.lead,.instruction,.result-note{color:#5d687b;line-height:1.55}.safety-card{line-height:1.55}.session-badge,.live-dot,.score-pill,.result-status{border-radius:999px;padding:7px 11px;background:#e8edf5;color:#49648f;font-size:12px;font-weight:800;white-space:nowrap}.progress{height:8px;background:#e7ecf2;border-radius:99px;overflow:hidden;margin:14px 0}.progress>div{height:100%;background:#49648f;transition:width .25s}.instruction-divider{width:48px;height:4px;background:#246bce;border-radius:2px;margin:12px 0}.target{display:inline-block;padding:10px 14px;border:1px dashed #9aa9bc;border-radius:9px;background:#f7f9fc;font-weight:800}
+    .hero,.progress-row,.section-heading,.result-top{display:flex;justify-content:space-between;align-items:center;gap:16px}.hero{align-items:flex-start}.eyebrow{margin:0 0 5px;font-size:11px;font-weight:800;letter-spacing:1.4px}.lead,.instruction,.result-note{color:#5d687b;line-height:1.55}.safety-card{line-height:1.55}.session-badge,.live-dot,.score-pill,.result-status{border-radius:999px;padding:7px 11px;background:#e8edf5;color:#49648f;font-size:12px;font-weight:800;white-space:nowrap}.progress{height:8px;background:#e7ecf2;border-radius:99px;overflow:hidden;margin:14px 0}.progress>div{height:100%;background:#49648f;transition:width .25s}.instruction-overlay{position:absolute;inset:0;z-index:5;display:none;align-items:center;justify-content:center;text-align:center;padding:24px;background:#246bce;color:#fff;font-size:24px;font-weight:800}.instruction-overlay.active{display:flex}.target{display:inline-block;padding:10px 14px;border:1px dashed #9aa9bc;border-radius:9px;background:#f7f9fc;font-weight:800}
 .video-wrap{position:relative;overflow:hidden}
 .gaze-target{position:absolute;width:28px;height:28px;border-radius:50%;background:#246bce;box-shadow:0 0 0 7px #246bce22,0 0 18px #246bce88;transform:translate(-50%,-50%);left:50%;top:50%;z-index:3;display:none;pointer-events:none}
 .gaze-target.active{display:block}
@@ -31,7 +31,7 @@
     </section>
 
     <section class="card camera-card">
-      <div class="video-wrap"><video id="video" autoplay playsinline muted></video><canvas id="overlay"></canvas><div id="gaze-target" class="gaze-target"></div><div id="countdown" class="countdown hidden"></div></div>
+      <div class="video-wrap"><video id="video" autoplay playsinline muted></video><canvas id="overlay"></canvas><div id="instruction-overlay" class="instruction-overlay"><strong id="instruction-overlay-text"></strong></div><div id="gaze-target" class="gaze-target"></div><div id="countdown" class="countdown hidden"></div></div>
       <div class="controls"><button id="start" class="primary">Start camera</button><button id="next" class="primary" disabled>Begin session</button><button id="stop" disabled>Stop camera</button><span id="status">Camera is off.</span></div>
     </section>
 
