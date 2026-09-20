@@ -6,7 +6,7 @@
   <title>Eye Movement Observation</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
-    .hero,.progress-row,.section-heading,.result-top{display:flex;justify-content:space-between;align-items:center;gap:16px}.hero{align-items:flex-start}.eyebrow{margin:0 0 5px;font-size:11px;font-weight:800;letter-spacing:1.4px}.lead,.instruction,.result-note{color:#5d687b;line-height:1.55}.safety-card{line-height:1.55}.session-badge,.live-dot,.score-pill,.result-status{border-radius:999px;padding:7px 11px;background:#e8edf5;color:#49648f;font-size:12px;font-weight:800;white-space:nowrap}.progress{height:8px;background:#e7ecf2;border-radius:99px;overflow:hidden;margin:14px 0}.progress>div{height:100%;background:#49648f;transition:width .25s}.target{display:inline-block;padding:10px 14px;border:1px dashed #9aa9bc;border-radius:9px;background:#f7f9fc;font-weight:800}
+    .hero,.progress-row,.section-heading,.result-top{display:flex;justify-content:space-between;align-items:center;gap:16px}.hero{align-items:flex-start}.eyebrow{margin:0 0 5px;font-size:11px;font-weight:800;letter-spacing:1.4px}.lead,.instruction,.result-note{color:#5d687b;line-height:1.55}.safety-card{line-height:1.55}.session-badge,.live-dot,.score-pill,.result-status{border-radius:999px;padding:7px 11px;background:#e8edf5;color:#49648f;font-size:12px;font-weight:800;white-space:nowrap}.progress{height:8px;background:#e7ecf2;border-radius:99px;overflow:hidden;margin:14px 0}.progress>div{height:100%;background:#49648f;transition:width .25s}.instruction-divider{width:48px;height:4px;background:#246bce;border-radius:2px;margin:12px 0}.target{display:inline-block;padding:10px 14px;border:1px dashed #9aa9bc;border-radius:9px;background:#f7f9fc;font-weight:800}
 .video-wrap{position:relative;overflow:hidden}
 .gaze-target{position:absolute;width:28px;height:28px;border-radius:50%;background:#246bce;box-shadow:0 0 0 7px #246bce22,0 0 18px #246bce88;transform:translate(-50%,-50%);left:50%;top:50%;z-index:3;display:none;pointer-events:none}
 .gaze-target.active{display:block}
@@ -26,6 +26,7 @@
       <div class="progress-row"><div><p class="eyebrow">GUIDED SESSION</p><h2 id="step-title">Ready to begin</h2></div><span id="progress-text">0 / 8</span></div>
       <div class="progress"><div id="progress-bar"></div></div>
       <p id="instruction" class="instruction">Start the camera, then follow the on-screen instructions. Keep your head as still as comfortably possible unless the instruction asks you to move it.</p>
+      <div class="instruction-divider"></div>
       <div class="target" id="target">Look straight at the camera</div>
     </section>
 
