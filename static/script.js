@@ -155,16 +155,18 @@ function rangeFor(step,key){const a=samples.filter(x=>x.step===step).map(x=>x[ke
 function scoreObserved(value){
   const percent=Math.max(0,Math.min(100,value*100));
   if(percent<=5)return 0;
-  if(percent<=25)return 25;
-  if(percent<=50)return 50;
-  if(percent<=75)return 75;
-  return 100;
+  if(percent<=50)return 5;
+  return 10;
 }
-function scoreLabel(score){
-  if(score===0)return "Not observed";
-  if(score===25)return "Not prominently observed";
-  if(score===50)return "Observed";
-  if(score===75)return "Prominently observed";
+function observationPercent(value){
+  return Math.max(0,Math.min(100,value*100));
+}
+function scoreLabel(value){
+  const percent=observationPercent(value);
+  if(percent<=5)return "Not observed";
+  if(percent<=25)return "Not prominently observed";
+  if(percent<=50)return "Observed";
+  if(percent<=75)return "Prominently observed";
   return "Extreme prominence observed";
 }
 
@@ -207,23 +209,23 @@ function analyze(){
   const repeatVar=repeat.length?sd(repeat.map(x=>x.open)):0;
 
   return [
-    {name:"Fatigable ptosis",score:scoreObserved(fatigueDrop),detail:`Eye-opening change during sustained upgaze: ${(fatigueDrop*100).toFixed(1)}%`},
-    {name:"Cogan's lid-twitch",score:scoreObserved(coganChange),detail:`Transient eye-opening change after the gaze transition: ${(coganChange*100).toFixed(1)}%`},
-    {name:"Curtain sign (enhanced ptosis)",score:scoreObserved(curtainDrop),detail:`Change in eye opening after the downgaze phase: ${(curtainDrop*100).toFixed(1)}%`},
-    {name:"Peek sign",score:scoreObserved(peekOpen),detail:`Maximum residual eye opening during the closure task: ${(peekOpen*100).toFixed(1)}%`},
-    {name:"Variable/asymmetric ophthalmoparesis",score:scoreObserved(gazeAsym),detail:`Difference between measured left/right gaze ranges: ${(gazeAsym*100).toFixed(1)}%`},
-    {name:"Fatigable saccades",score:scoreObserved(saccadeFatigue),detail:`Change in average gaze-jump amplitude from the first to second half of the gaze task: ${(saccadeFatigue*100).toFixed(1)}%`},
-    {name:"Gaze-holding instability",score:scoreObserved(holdInstability),detail:`Standard deviation of horizontal gaze position while holding: ${holdInstability.toFixed(3)}`},
-    {name:"Diplopia-related head tilt/turn compensation",score:scoreObserved(headComp),detail:`Head-position excursion during the compensation task: ${(headComp*100).toFixed(1)}%`},
-    {name:"Inter-visit or intra-exam variability itself",score:scoreObserved(repeatVar),detail:`Variation in eye opening during the repeatability task: ${(repeatVar*100).toFixed(1)}%`}
+    {name:"Fatigable ptosis",score:scoreObserved(fatigueDrop),percent:observationPercent(fatigueDrop),detail:`Eye-opening change during sustained upgaze: ${(fatigueDrop*100).toFixed(1)}%`},
+    {name:"Cogan's lid-twitch",score:scoreObserved(coganChange),percent:observationPercent(coganChange),detail:`Transient eye-opening change after the gaze transition: ${(coganChange*100).toFixed(1)}%`},
+    {name:"Curtain sign (enhanced ptosis)",score:scoreObserved(curtainDrop),percent:observationPercent(curtainDrop),detail:`Change in eye opening after the downgaze phase: ${(curtainDrop*100).toFixed(1)}%`},
+    {name:"Peek sign",score:scoreObserved(peekOpen),percent:observationPercent(peekOpen),detail:`Maximum residual eye opening during the closure task: ${(peekOpen*100).toFixed(1)}%`},
+    {name:"Variable/asymmetric ophthalmoparesis",score:scoreObserved(gazeAsym),percent:observationPercent(gazeAsym),detail:`Difference between measured left/right gaze ranges: ${(gazeAsym*100).toFixed(1)}%`},
+    {name:"Fatigable saccades",score:scoreObserved(saccadeFatigue),percent:observationPercent(saccadeFatigue),detail:`Change in average gaze-jump amplitude from the first to second half of the gaze task: ${(saccadeFatigue*100).toFixed(1)}%`},
+    {name:"Gaze-holding instability",score:scoreObserved(holdInstability),percent:observationPercent(holdInstability),detail:`Standard deviation of horizontal gaze position while holding: ${holdInstability.toFixed(3)}`},
+    {name:"Diplopia-related head tilt/turn compensation",score:scoreObserved(headComp),percent:observationPercent(headComp),detail:`Head-position excursion during the compensation task: ${(headComp*100).toFixed(1)}%`},
+    {name:"Inter-visit or intra-exam variability itself",score:scoreObserved(repeatVar),percent:observationPercent(repeatVar),detail:`Variation in eye opening during the repeatability task: ${(repeatVar*100).toFixed(1)}%`}
   ];
 }
 
 function renderResults(results){
   const list=document.getElementById("result-list"), observed=results.filter(r=>r.score>0).length, total=results.reduce((sum,r)=>sum+r.score,0);
-  document.getElementById("total-score").textContent=`${total}%`; document.getElementById("observed-count").textContent=observed; document.getElementById("legend-observed").textContent=observed; document.getElementById("legend-not-observed").textContent=results.length-observed;
+  document.getElementById("total-score").textContent=`${total} / ${results.length*10}`; document.getElementById("observed-count").textContent=observed; document.getElementById("legend-observed").textContent=observed; document.getElementById("legend-not-observed").textContent=results.length-observed;
   const angle=observed/results.length*360; document.getElementById("pie").style.background=`conic-gradient(#246bce 0deg ${angle}deg,#dfe5ed ${angle}deg 360deg)`;
-  list.innerHTML=results.map(r=>`<article class="result-item"><div><h3>${r.name}</h3><p>${r.detail}</p></div><div class="result-score"><strong>${r.score}</strong><span>${scoreLabel(r.score)}</span></div></article>`).join("");
+  list.innerHTML=results.map(r=>`<article class="result-item"><div><h3>${r.name}</h3><p>${r.detail} · Observation level: ${r.percent.toFixed(0)}%</p></div><div class="result-score"><strong>${r.score}</strong><span>${scoreLabel(r.percent/100)}</span></div></article>`).join("");
 }
 
 function stopCamera(){running=false;gazeTarget?.classList.remove("active");sessionActive=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;startBtn.disabled=false;nextBtn.disabled=true;stopBtn.disabled=true;status.textContent="Camera is off.";ctx.clearRect(0,0,canvas.width,canvas.height);}
