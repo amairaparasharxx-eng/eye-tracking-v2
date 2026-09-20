@@ -12,6 +12,7 @@ const progressText = document.getElementById("progress-text");
 const progressBar = document.getElementById("progress-bar");
 const stepBadge = document.getElementById("step-badge");
 const countdown = document.getElementById("countdown");
+const gazeTarget = document.getElementById("gaze-target");
 
 const MEDIAPIPE_VERSION = "0.10.35";
 const MP_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}`;
@@ -81,11 +82,29 @@ async function createLandmarker(){
   catch(e){console.warn("GPU initialization failed; using CPU",e);return await mpFaceLandmarker.createFromOptions(mpFileset,{baseOptions:{modelAssetPath:MODEL_URL,delegate:"CPU"},runningMode:"VIDEO",numFaces:1});}
 }
 
+function moveGazeTarget(step, phaseValue=1){
+  if(!gazeTarget) return;
+  gazeTarget.classList.add("active");
+  const positions = {
+    0:[50,50],
+    1:[50,18],
+    2:phaseValue===1?[50,82]:[50,22],
+    3:[50,50],
+    4:phaseValue===1?[15,50]:phaseValue===2?[85,50]:[50,50],
+    5:[50,50],
+    6:phaseValue===1?[18,50]:[82,50],
+    7:phaseValue===1?[50,50]:[85,50]
+  };
+  const p=positions[step]||[50,50];
+  gazeTarget.style.left=p[0]+"%";
+  gazeTarget.style.top=p[1]+"%";
+}
+
 function setStep(i){
   stepIndex=i; const s=STEPS[i]; stepTitle.textContent=s.title; instruction.textContent=s.instruction; target.textContent=s.target;
   progressText.textContent=`${i+1} / ${STEPS.length}`; progressBar.style.width=`${i/STEPS.length*100}%`; stepBadge.textContent=`Step ${i+1}`;
   nextBtn.textContent=i===0?"Start guided session":(i===STEPS.length-1?"Finish session":"Next step");
-  stepSamples=[]; phase=1; phaseStarted=performance.now(); stepStarted=performance.now(); countdown.classList.add("hidden"); status.textContent=`Step ${i+1}: ${s.title}`;
+  stepSamples=[]; phase=1; phaseStarted=performance.now(); stepStarted=performance.now(); countdown.classList.add("hidden"); moveGazeTarget(i,1); status.textContent=`Step ${i+1}: ${s.title}`;
 }
 
 function countdownFor(seconds){
@@ -103,7 +122,7 @@ function loop(){
       const f=eyeFeatures(face); updateLive(f);
       if(sessionActive&&stepIndex>=0){
         collectStepData(f); const s=STEPS[stepIndex];
-        if(stepIndex===2&&phase===1&&countdownFor(s.seconds)){phase=2;phaseStarted=performance.now();target.textContent=s.phase2;}
+        if(stepIndex===2&&phase===1&&countdownFor(s.seconds)){phase=2;phaseStarted=performance.now();target.textContent=s.phase2;moveGazeTarget(stepIndex,2);}
         else if(stepIndex===3&&phase===1&&countdownFor(s.seconds)){phase=2;phaseStarted=performance.now();target.textContent=s.phase2;}
         else if(![2,3].includes(stepIndex)&&countdownFor(s.seconds))finishStep();
         else if(phase===2&&countdownFor(s.seconds2))finishStep();
@@ -193,5 +212,5 @@ function renderResults(results){
   list.innerHTML=results.map(r=>`<article class="result-item"><div><h3>${r.name}</h3><p>${r.detail}</p></div><div class="result-score"><strong>${r.score}</strong><span>${r.score===0?"Not observed":r.score===5?"Not prominent":"Prominent"}</span></div></article>`).join("");
 }
 
-function stopCamera(){running=false;sessionActive=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;startBtn.disabled=false;nextBtn.disabled=true;stopBtn.disabled=true;status.textContent="Camera is off.";ctx.clearRect(0,0,canvas.width,canvas.height);}
+function stopCamera(){running=false;gazeTarget?.classList.remove("active");sessionActive=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;startBtn.disabled=false;nextBtn.disabled=true;stopBtn.disabled=true;status.textContent="Camera is off.";ctx.clearRect(0,0,canvas.width,canvas.height);}
 startBtn.addEventListener("click",startCamera); nextBtn.addEventListener("click",startSession); stopBtn.addEventListener("click",stopCamera); document.getElementById("restart").addEventListener("click",()=>window.location.reload()); window.addEventListener("beforeunload",stopCamera);
