@@ -13,6 +13,8 @@ const progressBar = document.getElementById("progress-bar");
 const stepBadge = document.getElementById("step-badge");
 const countdown = document.getElementById("countdown");
 const gazeTarget = document.getElementById("gaze-target");
+const instructionOverlay = document.getElementById("instruction-overlay");
+const instructionOverlayText = document.getElementById("instruction-overlay-text");
 
 const MEDIAPIPE_VERSION = "0.10.35";
 const MP_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}`;
@@ -34,6 +36,7 @@ let stream = null, landmarker = null, running = false, sessionActive = false;
 let stepIndex = -1, stepStarted = 0, lastVideoTime = -1;
 let mpFaceLandmarker = null, mpFileset = null, samples = [], stepSamples = [];
 let phase = 1, phaseStarted = 0, lastGazeX = null;
+let instructionOverlayUntil = 0;
 
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
 const sd = a => { if (a.length < 2) return 0; const m = mean(a); return Math.sqrt(mean(a.map(x => (x - m) ** 2))); };
@@ -104,7 +107,7 @@ function setStep(i){
   stepIndex=i; const s=STEPS[i]; stepTitle.textContent=s.title; instruction.textContent=s.instruction; target.textContent=s.target;
   progressText.textContent=`${i+1} / ${STEPS.length}`; progressBar.style.width=`${i/STEPS.length*100}%`; stepBadge.textContent=`Step ${i+1}`;
   nextBtn.textContent=i===0?"Start guided session":(i===STEPS.length-1?"Finish session":"Next step");
-  stepSamples=[]; phase=1; phaseStarted=performance.now(); stepStarted=performance.now(); countdown.classList.add("hidden"); moveGazeTarget(i,1); status.textContent=`Step ${i+1}: ${s.title}`;
+  stepSamples=[]; phase=1; phaseStarted=performance.now(); stepStarted=performance.now(); countdown.classList.add("hidden"); moveGazeTarget(i,1); instructionOverlayText.textContent=s.instruction; instructionOverlay.classList.add("active"); instructionOverlayUntil=performance.now()+3000; status.textContent=`Step ${i+1}: ${s.title}`;
 }
 
 function countdownFor(seconds){
@@ -116,6 +119,7 @@ function finishStep(){if(stepIndex<STEPS.length-1){setStep(stepIndex+1);nextBtn.
 
 function loop(){
   if(!running||!landmarker)return;
+  if(instructionOverlay?.classList.contains("active") && performance.now()>=instructionOverlayUntil) instructionOverlay.classList.remove("active");
   if(video.readyState>=2&&video.currentTime!==lastVideoTime){
     lastVideoTime=video.currentTime; const result=landmarker.detectForVideo(video,performance.now()); drawLandmarks(result); const face=result.faceLandmarks?.[0];
     if(face&&face.length>=478){
@@ -228,5 +232,5 @@ function renderResults(results){
   list.innerHTML=results.map(r=>`<article class="result-item"><div><h3>${r.name}</h3><p>${r.detail} · Observation level: ${r.percent.toFixed(0)}%</p></div><div class="result-score"><strong>${r.score}</strong><span>${scoreLabel(r.percent/100)}</span></div></article>`).join("");
 }
 
-function stopCamera(){running=false;gazeTarget?.classList.remove("active");sessionActive=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;startBtn.disabled=false;nextBtn.disabled=true;stopBtn.disabled=true;status.textContent="Camera is off.";ctx.clearRect(0,0,canvas.width,canvas.height);}
+function stopCamera(){running=false;gazeTarget?.classList.remove("active");instructionOverlay?.classList.remove("active");sessionActive=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;startBtn.disabled=false;nextBtn.disabled=true;stopBtn.disabled=true;status.textContent="Camera is off.";ctx.clearRect(0,0,canvas.width,canvas.height);}
 startBtn.addEventListener("click",startCamera); nextBtn.addEventListener("click",startSession); stopBtn.addEventListener("click",stopCamera); document.getElementById("restart").addEventListener("click",()=>window.location.reload()); window.addEventListener("beforeunload",stopCamera);
