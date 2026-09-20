@@ -104,7 +104,8 @@ function moveGazeTarget(step, phaseValue=1){
 }
 
 function setStep(i){
-  stepIndex=i; const s=STEPS[i]; stepTitle.textContent=s.title; instruction.textContent=s.instruction; target.textContent=s.target;
+  stepIndex=i; const s=STEPS[i];
+  if(gazeTarget) gazeTarget.classList.toggle("active", i!==3); stepTitle.textContent=s.title; instruction.textContent=s.instruction; target.textContent=s.target;
   progressText.textContent=`${i+1} / ${STEPS.length}`; progressBar.style.width=`${i/STEPS.length*100}%`; stepBadge.textContent=`Step ${i+1}`;
   nextBtn.textContent=i===0?"Start guided session":(i===STEPS.length-1?"Finish session":"Next step");
   stepSamples=[]; phase=1; phaseStarted=performance.now(); stepStarted=performance.now(); countdown.classList.add("hidden"); moveGazeTarget(i,1); instructionOverlayText.textContent=s.instruction; instructionOverlay.classList.add("active"); instructionOverlayUntil=performance.now()+3000; status.textContent=`Step ${i+1}: ${s.title}`;
