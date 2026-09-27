@@ -15,6 +15,12 @@ const countdown = document.getElementById("countdown");
 const gazeTarget = document.getElementById("gaze-target");
 const instructionOverlay = document.getElementById("instruction-overlay");
 const instructionOverlayText = document.getElementById("instruction-overlay-text");
+const eyeConsent = document.getElementById("eye-consent");
+const eyeSummaryConsent = document.getElementById("eye-summary-consent");
+const mgSummaryInput = document.getElementById("mg-summary-input");
+const combineMgButton = document.getElementById("combine-mg");
+const mgImportStatus = document.getElementById("mg-import-status");
+const combinedSummary = document.getElementById("combined-summary");
 
 const MEDIAPIPE_VERSION = "0.10.35";
 const MP_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}`;
@@ -139,7 +145,12 @@ function loop(){
 }
 
 async function startCamera(){
-  if(running)return; startBtn.disabled=true; status.textContent="Requesting camera access…";
+  if(running)return;
+  if(!eyeConsent?.checked){
+    status.textContent="Please give consent before starting the prototype session.";
+    return;
+  }
+  startBtn.disabled=true; status.textContent="Requesting camera access…";
   try{
     if(!navigator.mediaDevices?.getUserMedia)throw new Error("Camera access is unavailable in this browser.");
     stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},facingMode:"user"},audio:false});
@@ -233,5 +244,79 @@ function renderResults(results){
   list.innerHTML=results.map(r=>`<article class="result-item"><div><h3>${r.name}</h3><p>${r.detail} · Observation level: ${r.percent.toFixed(0)}%</p></div><div class="result-score"><strong>${r.score}</strong><span>${scoreLabel(r.percent/100)}</span></div></article>`).join("");
 }
 
+function escapeHtml(value){
+  return String(value ?? "")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+function parseMgTransfer(text){
+  const parsed=JSON.parse(text);
+  if(parsed?.format!=="mg-screening-transfer-v1" || !parsed.questionnaire){
+    throw new Error("This does not look like a valid MG Screening v2 summary package.");
+  }
+  return parsed.questionnaire;
+}
+
+function renderCombinedSummary(mg, eyeResults){
+  const labels={
+    q3:"Diagnosis of MG",q4:"Diagnosis of Thymoma",q5:"Thymectomy",
+    q6:"Family history of MG",q7:"Other autoimmune disease",
+    q8:"Slurring of speech",q9:"Trouble eating, chewing, or swallowing",
+    q10:"Shortness of breath",q11:"Trouble standing from a chair",
+    q12:"Diplopia (double vision)",q13:"Ptosis (eyelid droop)"
+  };
+  const symptomRows=Object.entries(mg.answers||{}).map(([id,a])=>{
+    const answer=a.answer?"Yes":"No";
+    const severity=a.answer && a.severity!=null ? " (severity "+a.severity+"/10)" : "";
+    return "<tr><td>"+escapeHtml(labels[id]||id)+"</td><td>"+answer+severity+"</td></tr>";
+  }).join("");
+  const eyeRows=eyeResults.map(r=>
+    "<tr><td>"+escapeHtml(r.name)+"</td><td>"+r.percent.toFixed(0)+"% — "+escapeHtml(scoreLabel(r.percent/100))+"</td></tr>"
+  ).join("");
+  const meds=(mg.medications||"").trim() ? escapeHtml(mg.medications) : "None entered";
+  combinedSummary.innerHTML=
+    "<h3>Combined prototype summary</h3>"+
+    "<p><strong>This is an informational combination of two prototype outputs. It does not diagnose MG or any other condition.</strong></p>"+
+    "<table class='summary-table'>"+
+    "<tr><th>Questionnaire participant</th><td>"+escapeHtml(mg.name||"Not provided")+"</td></tr>"+
+    "<tr><th>Age</th><td>"+escapeHtml(mg.age||"Not provided")+"</td></tr>"+
+    "<tr><th>MG questionnaire score</th><td>"+escapeHtml(mg.scores?.totalScore)+" / "+escapeHtml(mg.scores?.maxTotalScore)+"</td></tr>"+
+    "<tr><th>MG questionnaire band</th><td>"+escapeHtml(mg.grading?.band||"Not provided")+"</td></tr>"+
+    "<tr><th>Medications entered</th><td>"+meds+"</td></tr></table>"+
+    "<h4>Questionnaire answers</h4>"+
+    "<table class='summary-table'><tr><th>Question</th><th>Response</th></tr>"+symptomRows+"</table>"+
+    "<h4>Eye observation results</h4>"+
+    "<table class='summary-table'><tr><th>Observation</th><th>Prototype observation level</th></tr>"+eyeRows+"</table>"+
+    "<p class='result-note'>The questionnaire and camera observations measure different things and should not be interpreted as a combined clinical score. Clinical interpretation requires a qualified healthcare professional.</p>";
+  combinedSummary.classList.remove("hidden");
+}
+
+function combineMgSummary(){
+  if(!eyeSummaryConsent?.checked){
+    mgImportStatus.textContent="Please confirm that you consent to combining the questionnaire results with this prototype summary.";
+    return;
+  }
+  if(!mgSummaryInput.value.trim()){
+    mgImportStatus.textContent="Paste the copied MG questionnaire summary data first.";
+    return;
+  }
+  try{
+    const mg=parseMgTransfer(mgSummaryInput.value.trim());
+    renderCombinedSummary(mg,analyze());
+    mgImportStatus.textContent="MG questionnaire results were added to the summary. Nothing was uploaded by this action.";
+  }catch(err){
+    combinedSummary.classList.add("hidden");
+    mgImportStatus.textContent=err.message||"Could not read the pasted MG summary.";
+  }
+}
+
 function stopCamera(){running=false;gazeTarget?.classList.remove("active");instructionOverlay?.classList.remove("active");sessionActive=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;startBtn.disabled=false;nextBtn.disabled=true;stopBtn.disabled=true;status.textContent="Camera is off.";ctx.clearRect(0,0,canvas.width,canvas.height);}
-startBtn.addEventListener("click",startCamera); nextBtn.addEventListener("click",startSession); stopBtn.addEventListener("click",stopCamera); document.getElementById("restart").addEventListener("click",()=>window.location.reload()); window.addEventListener("beforeunload",stopCamera);
+startBtn.addEventListener("click",startCamera);
+nextBtn.addEventListener("click",startSession);
+stopBtn.addEventListener("click",stopCamera);
+document.getElementById("restart").addEventListener("click",()=>window.location.reload());
+combineMgButton?.addEventListener("click",combineMgSummary);
+eyeConsent?.addEventListener("change",()=>{ if(!eyeConsent.checked && running) stopCamera(); });
+window.addEventListener("beforeunload",stopCamera);
