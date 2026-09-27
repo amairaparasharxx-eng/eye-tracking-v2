@@ -11,6 +11,7 @@
 .gaze-target{position:absolute;width:28px;height:28px;border-radius:50%;background:#246bce;box-shadow:0 0 0 7px #246bce22,0 0 18px #246bce88;transform:translate(-50%,-50%);left:50%;top:50%;z-index:3;display:none;pointer-events:none}
 .gaze-target.active{display:block}
 .gaze-target::after{content:"";position:absolute;inset:8px;border-radius:50%;background:#fff}.countdown{position:absolute;inset:0;display:grid;place-items:center;font-size:70px;font-weight:900;color:white;background:#0002;text-shadow:0 2px 15px #000}.hidden{display:none!important}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.metrics div{background:#f6f8fb;border-radius:9px;padding:12px}.metrics span{display:block;color:#667085;font-size:12px}.metrics strong{display:block;font-size:20px;margin-top:4px}.summary-layout{display:flex;align-items:center;gap:28px;margin:20px 0}.pie-wrap{position:relative;width:180px;height:180px;flex:0 0 180px}.pie{width:100%;height:100%;border-radius:50%;background:conic-gradient(#49648f 0deg 0deg,#dfe5ed 0deg 360deg)}.pie-center{position:absolute;inset:30px;border-radius:50%;background:#fff;display:grid;place-content:center;text-align:center;box-shadow:0 2px 10px #0001}.pie-center strong{font-size:30px}.pie-center span{font-size:12px;color:#667085}.legend{display:grid;gap:12px;min-width:190px}.legend div{display:flex;align-items:center;gap:8px}.legend strong{margin-left:auto}.legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block}.legend-dot.observed{background:#49648f}.legend-dot.not-observed{background:#dfe5ed}.result-list{display:grid;gap:10px}.result-item{border:1px solid #e0e6ee;border-radius:10px;padding:14px;background:#fbfcfe}.result-item.observed .result-status{background:#e7eef8}.result-score{margin-top:7px;color:#667085;font-size:13px;line-height:1.5}.result-note{font-size:13px}.camera-card .video-wrap{min-height:180px}.live-dot::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#7d8795;margin-right:6px}@media(max-width:800px){.metrics{grid-template-columns:1fr 1fr}.hero{flex-direction:column}}@media(max-width:520px){.summary-layout{align-items:flex-start;flex-direction:column}}
+    .consent-card{background:#f0fdf4;border-left:5px solid #16a34a;padding:18px;border-radius:10px;margin-top:18px;line-height:1.5}.consent-card label{display:flex;gap:10px;align-items:flex-start;margin-top:12px}.consent-card input{margin-top:4px}.import-box{margin-top:22px;padding:18px;border-radius:10px;background:#f7f9fc;border:1px solid #d9dee7}.import-box textarea{width:100%;min-height:150px;padding:12px;border:1px solid #cbd5e1;border-radius:8px;font-family:monospace;font-size:13px;resize:vertical}.combined-summary{margin-top:18px;padding:18px;border-radius:10px;background:#eef4ff;border-left:5px solid #246bce;line-height:1.55}.combined-summary h3{margin-top:0}.summary-table{width:100%;border-collapse:collapse;margin-top:12px}.summary-table th,.summary-table td{text-align:left;padding:7px;border-bottom:1px solid #dfe5ed;vertical-align:top}.summary-table th{width:34%}
   </style>
 </head>
 <body>
@@ -21,6 +22,13 @@
     </header>
 
     <section class="card safety-card"><strong>Important:</strong> This is a research/prototype tool, not a diagnostic test. Camera measurements can be affected by lighting, camera position, face angle, glasses, and tracking errors. Several clinical signs require a clinician's examination and cannot be confirmed by a webcam alone.</section>
+
+    <section class="card consent-card">
+      <h2>Consent for this prototype session</h2>
+      <p>Your camera is used in this browser to perform the eye-movement observation. This prototype does not send the live camera video to the server. If you paste MG questionnaire results below, those results are processed in this browser to create the combined summary.</p>
+      <label><input type="checkbox" id="eye-consent"><span>I consent to using my information and camera-derived measurements for this prototype session.</span></label>
+      <label><input type="checkbox" id="eye-summary-consent"><span>I understand that I can choose whether to combine my MG questionnaire results with this eye-observation summary.</span></label>
+    </section>
 
     <section class="card protocol-card">
       <div class="progress-row"><div><p class="eyebrow">GUIDED SESSION</p><h2 id="step-title">Ready to begin</h2></div><span id="progress-text">0 / 8</span></div>
@@ -56,6 +64,15 @@
       <div id="result-list" class="result-list"></div>
       <p class="result-note"><strong>Scoring:</strong> 0 = none, 5 = not prominent, 10 = prominent. These are prototype observation levels only, not a validated clinical score or probability of disease. Inter-visit variability cannot be determined from one session; the final item therefore reports intra-exam repeatability.</p>
       <button id="restart" class="primary">Run another session</button>
+
+      <div class="import-box">
+        <h3>WOULD YOU LIKE TO ADD YOUR MG QUESTIONNAIRE RESULTS FOR AN ELABORATIVE SUMMARY?</h3>
+        <p>Copy the summary data from MG Screening v2 and paste it below. This is optional.</p>
+        <textarea id="mg-summary-input" placeholder="Paste the copied MG questionnaire summary data here..."></textarea>
+        <button id="combine-mg" class="primary" type="button">Add MG results to summary</button>
+        <p id="mg-import-status" class="result-note"></p>
+        <div id="combined-summary" class="combined-summary hidden"></div>
+      </div>
     </section>
   </main>
   <script type="module" src="{{ url_for('static', filename='script.js') }}"></script>
