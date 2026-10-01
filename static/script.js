@@ -28,20 +28,39 @@ const WASM_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPI
 const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
 
 const STEPS = [
-  { title: "Baseline", instruction: "Look straight at the camera and keep your face relaxed. Hold still while baseline eye and head measurements are collected.", target: "Look straight at the camera", seconds: 5 },
-  { title: "Sustained upgaze", instruction: "Keep your head still. Look upward toward the target and hold your gaze there until the timer finishes.", target: "Look UP — keep your head still", seconds: 8 },
-  { title: "Down then up", instruction: "Look down first. When the target changes, look upward and hold. The camera records changes in eye opening.", target: "Look DOWN", seconds: 3, phase2: "Then look UP", seconds2: 4 },
-  { title: "Firm eye closure", instruction: "Close both eyes gently but firmly when the timer starts, then reopen when instructed. Keep your head still.", target: "Close your eyes firmly", seconds: 4, phase2: "Open your eyes", seconds2: 3 },
-  { title: "Side-to-side gaze", instruction: "Keep your head facing forward. Follow the targets with your eyes only: left, centre, right, centre.", target: "Follow the target with your eyes", seconds: 10 },
-  { title: "Gaze holding", instruction: "Look at the indicated target and hold your eyes there while keeping your head still.", target: "Hold your gaze", seconds: 8 },
-  { title: "Head compensation", instruction: "Follow the target left and right. The camera records head movement alongside eye movement.", target: "Follow the target left and right", seconds: 8 },
-  { title: "Repeatability", instruction: "Repeat the straight-ahead position and then look left and right again. The program compares measurements within this session.", target: "Repeat the gaze sequence", seconds: 10 }
+  { title:"Baseline", instruction:"Keep your head still and look at the blue dot in the centre.", phases:[{target:"Blue dot: CENTER",x:50,y:50,seconds:5,showDot:true}] },
+  { title:"Sustained upgaze", instruction:"Keep your head still. Look only at the blue dot as it moves upward.", phases:[{target:"Blue dot: UP — keep your head still",x:50,y:18,seconds:8,showDot:true}] },
+  { title:"Down then up", instruction:"Follow the blue dot. First look down; when it moves, look up.", phases:[
+    {target:"Blue dot: DOWN",x:50,y:82,seconds:3,showDot:true},
+    {target:"Blue dot: UP",x:50,y:22,seconds:4,showDot:true}
+  ] },
+  { title:"Firm eye closure", instruction:"When the eye-closure phase begins, close both eyes gently but firmly. The blue dot disappears during closure. Reopen when the instruction changes.", phases:[
+    {target:"Close both eyes — blue dot hidden",x:50,y:50,seconds:4,showDot:false},
+    {target:"Blue dot: CENTER — open your eyes",x:50,y:50,seconds:3,showDot:true}
+  ] },
+  { title:"Side-to-side gaze", instruction:"Follow the blue dot with your eyes only. It will move LEFT, CENTRE, RIGHT, then CENTRE.", phases:[
+    {target:"Blue dot: LEFT",x:15,y:50,seconds:2,showDot:true},
+    {target:"Blue dot: CENTRE",x:50,y:50,seconds:2,showDot:true},
+    {target:"Blue dot: RIGHT",x:85,y:50,seconds:2,showDot:true},
+    {target:"Blue dot: CENTRE",x:50,y:50,seconds:2,showDot:true}
+  ] },
+  { title:"Gaze holding", instruction:"Keep your head still and hold your gaze on the blue dot in the centre.", phases:[{target:"Blue dot: CENTER — hold",x:50,y:50,seconds:8,showDot:true}] },
+  { title:"Head compensation", instruction:"Follow the blue dot LEFT, then RIGHT. Let your head move naturally with the target during this task.", phases:[
+    {target:"Blue dot: LEFT",x:18,y:50,seconds:4,showDot:true},
+    {target:"Blue dot: RIGHT",x:82,y:50,seconds:4,showDot:true}
+  ] },
+  { title:"Repeatability", instruction:"Repeat the gaze sequence: CENTRE, LEFT, RIGHT, then CENTRE. Follow the blue dot exactly.", phases:[
+    {target:"Blue dot: CENTRE",x:50,y:50,seconds:3,showDot:true},
+    {target:"Blue dot: LEFT",x:15,y:50,seconds:2,showDot:true},
+    {target:"Blue dot: RIGHT",x:85,y:50,seconds:2,showDot:true},
+    {target:"Blue dot: CENTRE",x:50,y:50,seconds:3,showDot:true}
+  ] }
 ];
 
 let stream = null, landmarker = null, running = false, sessionActive = false;
 let stepIndex = -1, stepStarted = 0, lastVideoTime = -1;
 let mpFaceLandmarker = null, mpFileset = null, samples = [], stepSamples = [];
-let phase = 1, phaseStarted = 0, lastGazeX = null;
+let phase = 0, phaseStarted = 0, lastGazeX = null;
 let instructionOverlayUntil = 0;
 
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
@@ -91,30 +110,36 @@ async function createLandmarker(){
   catch(e){console.warn("GPU initialization failed; using CPU",e);return await mpFaceLandmarker.createFromOptions(mpFileset,{baseOptions:{modelAssetPath:MODEL_URL,delegate:"CPU"},runningMode:"VIDEO",numFaces:1});}
 }
 
-function moveGazeTarget(step, phaseValue=1){
-  if(!gazeTarget) return;
-  gazeTarget.classList.add("active");
-  const positions = {
-    0:[50,50],
-    1:[50,18],
-    2:phaseValue===1?[50,82]:[50,22],
-    3:[50,50],
-    4:phaseValue===1?[15,50]:phaseValue===2?[85,50]:[50,50],
-    5:[50,50],
-    6:phaseValue===1?[18,50]:[82,50],
-    7:phaseValue===1?[50,50]:[85,50]
-  };
-  const p=positions[step]||[50,50];
-  gazeTarget.style.left=p[0]+"%";
-  gazeTarget.style.top=p[1]+"%";
+function applyPhase(step, phaseIndex) {
+  const s = STEPS[step];
+  const p = s.phases[phaseIndex];
+  if (!p) return;
+  target.textContent = p.target;
+  instruction.textContent = s.instruction;
+  gazeTarget.style.left = p.x + "%";
+  gazeTarget.style.top = p.y + "%";
+  gazeTarget.classList.toggle("active", !!p.showDot);
 }
 
 function setStep(i){
-  stepIndex=i; const s=STEPS[i];
-  if(gazeTarget) gazeTarget.classList.toggle("active", i!==3); stepTitle.textContent=s.title; instruction.textContent=s.instruction; target.textContent=s.target;
-  progressText.textContent=`${i+1} / ${STEPS.length}`; progressBar.style.width=`${i/STEPS.length*100}%`; stepBadge.textContent=`Step ${i+1}`;
+  stepIndex=i;
+  const s=STEPS[i];
+  stepTitle.textContent=s.title;
+  instruction.textContent=s.instruction;
+  progressText.textContent=(i+1) + " / " + STEPS.length;
+  progressBar.style.width=(i/STEPS.length*100) + "%";
+  stepBadge.textContent="Step " + (i+1);
   nextBtn.textContent=i===0?"Start guided session":(i===STEPS.length-1?"Finish session":"Next step");
-  stepSamples=[]; phase=1; phaseStarted=performance.now(); stepStarted=performance.now(); countdown.classList.add("hidden"); moveGazeTarget(i,1); instructionOverlayText.textContent=s.instruction; instructionOverlay.classList.add("active"); instructionOverlayUntil=performance.now()+3000; status.textContent=`Step ${i+1}: ${s.title}`;
+  stepSamples=[];
+  phase=0;
+  phaseStarted=performance.now();
+  stepStarted=performance.now();
+  countdown.classList.add("hidden");
+  applyPhase(i,0);
+  instructionOverlayText.textContent=s.instruction;
+  instructionOverlay.classList.add("active");
+  instructionOverlayUntil=performance.now()+3000;
+  status.textContent="Step " + (i+1) + ": " + s.title;
 }
 
 function countdownFor(seconds){
@@ -126,20 +151,35 @@ function finishStep(){if(stepIndex<STEPS.length-1){setStep(stepIndex+1);nextBtn.
 
 function loop(){
   if(!running||!landmarker)return;
-  if(instructionOverlay?.classList.contains("active") && performance.now()>=instructionOverlayUntil) instructionOverlay.classList.remove("active");
+  if(instructionOverlay?.classList.contains("active") && performance.now()>=instructionOverlayUntil){
+    instructionOverlay.classList.remove("active");
+  }
   if(video.readyState>=2&&video.currentTime!==lastVideoTime){
-    lastVideoTime=video.currentTime; const result=landmarker.detectForVideo(video,performance.now()); drawLandmarks(result); const face=result.faceLandmarks?.[0];
+    lastVideoTime=video.currentTime;
+    const result=landmarker.detectForVideo(video,performance.now());
+    drawLandmarks(result);
+    const face=result.faceLandmarks?.[0];
     if(face&&face.length>=478){
-      const f=eyeFeatures(face); updateLive(f);
+      const f=eyeFeatures(face);
+      updateLive(f);
       if(sessionActive&&stepIndex>=0){
-        collectStepData(f); const s=STEPS[stepIndex];
-        if(stepIndex===2&&phase===1&&countdownFor(s.seconds)){phase=2;phaseStarted=performance.now();target.textContent=s.phase2;moveGazeTarget(stepIndex,2);}
-        else if(stepIndex===3&&phase===1&&countdownFor(s.seconds)){phase=2;phaseStarted=performance.now();target.textContent=s.phase2;}
-        else if(![2,3].includes(stepIndex)&&countdownFor(s.seconds))finishStep();
-        else if(phase===2&&countdownFor(s.seconds2))finishStep();
+        collectStepData(f);
+        const s=STEPS[stepIndex];
+        const currentPhase=s.phases[phase];
+        if(currentPhase && countdownFor(currentPhase.seconds)){
+          if(phase < s.phases.length-1){
+            phase += 1;
+            phaseStarted=performance.now();
+            applyPhase(stepIndex,phase);
+          } else {
+            finishStep();
+          }
+        }
         status.textContent="Face detected — collecting data.";
       }
-    }else if(sessionActive)status.textContent="Face not detected — centre your face in the camera.";
+    } else if(sessionActive){
+      status.textContent="Face not detected — centre your face in the camera.";
+    }
   }
   requestAnimationFrame(loop);
 }
