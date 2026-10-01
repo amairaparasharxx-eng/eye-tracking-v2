@@ -17,6 +17,7 @@ const instructionOverlay = document.getElementById("instruction-overlay");
 const instructionOverlayText = document.getElementById("instruction-overlay-text");
 const eyeConsent = document.getElementById("eye-consent");
 const eyeSummaryConsent = document.getElementById("eye-summary-consent");
+const eyeDiagnosticConsent = document.getElementById("eye-diagnostic-consent");
 const mgSummaryInput = document.getElementById("mg-summary-input");
 const combineMgButton = document.getElementById("combine-mg");
 const mgImportStatus = document.getElementById("mg-import-status");
@@ -186,8 +187,8 @@ function loop(){
 
 async function startCamera(){
   if(running)return;
-  if(!eyeConsent?.checked){
-    status.textContent="Please give consent before starting the prototype session.";
+  if(!eyeConsent?.checked || !eyeDiagnosticConsent?.checked){
+    status.textContent="Please confirm all required consent statements before starting the prototype session.";
     return;
   }
   startBtn.disabled=true; status.textContent="Requesting camera access…";
