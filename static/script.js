@@ -143,12 +143,38 @@ function setStep(i){
   status.textContent="Step " + (i+1) + ": " + s.title + " — read the instructions, then click Continue.";
 }
 
+let audioContext = null;
+
+function playTimerBeep(){
+  try{
+    audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+    const now = audioContext.currentTime;
+    [0, 0.18, 0.36].forEach((offset) => {
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0001, now + offset);
+      gain.gain.exponentialRampToValueAtTime(0.22, now + offset + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.12);
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      osc.start(now + offset);
+      osc.stop(now + offset + 0.13);
+    });
+  }catch(e){
+    console.warn("Timer sound could not play:", e);
+  }
+}
+
 function countdownFor(seconds){
   const elapsed=(performance.now()-phaseStarted)/1000, left=Math.max(0,Math.ceil(seconds-elapsed));
   if(left>0){countdown.textContent=left;countdown.classList.remove("hidden");}else countdown.classList.add("hidden"); return elapsed>=seconds;
 }
 function collectStepData(f){const sample={t:(performance.now()-stepStarted)/1000,...f};samples.push({step:stepIndex,...sample});stepSamples.push(sample);}
-function finishStep(){if(stepIndex<STEPS.length-1){setStep(stepIndex+1);nextBtn.disabled=false;}else finishSession();}
+function finishStep(){
+  playTimerBeep();
+if(stepIndex<STEPS.length-1){setStep(stepIndex+1);nextBtn.disabled=false;}else finishSession();}
 
 function loop(){
   if(!running||!landmarker)return;
