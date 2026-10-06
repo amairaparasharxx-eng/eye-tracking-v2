@@ -30,32 +30,32 @@ const WASM_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPI
 const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
 
 const STEPS = [
-  { title:"Baseline", instruction:"Keep your head still and look at the blue dot in the centre.", phases:[{target:"Blue dot: CENTER",x:50,y:50,seconds:5,showDot:true}] },
-  { title:"Sustained upgaze", instruction:"Keep your head still. Look only at the blue dot as it moves upward.", phases:[{target:"Blue dot: UP — keep your head still",x:50,y:18,seconds:60,showDot:true}] },
-  { title:"Down then up", instruction:"Follow the blue dot. First look down; when it moves, look up.", phases:[
-    {target:"Blue dot: DOWN",x:50,y:82,seconds:3,showDot:true},
-    {target:"Blue dot: UP",x:50,y:22,seconds:4,showDot:true}
+  { title:"Baseline", instruction:"Keep your head still and look at the blue dot in the centre.", phases:[{target:"Blue dot: CENTER",x:50,y:50,seconds:30,showDot:true}] },
+  { title:"Sustained upgaze", instruction:"Keep your head still. Look only at the blue dot above centre.", phases:[{target:"Blue dot: UP — keep your head still",x:50,y:18,seconds:30,showDot:true}] },
+  { title:"Down then up", instruction:"Follow the blue dot with your eyes only. Hold your gaze at each position until the dot changes.", phases:[
+    {target:"Blue dot: DOWN",x:50,y:82,seconds:30,showDot:true},
+    {target:"Blue dot: UP",x:50,y:22,seconds:30,showDot:true}
   ] },
-  { title:"Firm eye closure", instruction:"When the eye-closure phase begins, close both eyes gently but firmly. The blue dot disappears during closure. Reopen when the instruction changes.", phases:[
-    {target:"Close both eyes — blue dot hidden",x:50,y:50,seconds:4,showDot:false},
-    {target:"Blue dot: CENTER — open your eyes",x:50,y:50,seconds:3,showDot:true}
+  { title:"Firm eye closure", instruction:"Close both eyes gently but firmly while the dot is hidden. When the dot returns to the centre, open your eyes and keep looking at it.", phases:[
+    {target:"Close both eyes — blue dot hidden",x:50,y:50,seconds:30,showDot:false},
+    {target:"Blue dot: CENTER — open your eyes",x:50,y:50,seconds:30,showDot:true}
   ] },
-  { title:"Side-to-side gaze", instruction:"Follow the blue dot with your eyes only. It will move LEFT, CENTRE, RIGHT, then CENTRE.", phases:[
-    {target:"Blue dot: LEFT",x:15,y:50,seconds:2,showDot:true},
-    {target:"Blue dot: CENTRE",x:50,y:50,seconds:2,showDot:true},
-    {target:"Blue dot: RIGHT",x:85,y:50,seconds:2,showDot:true},
-    {target:"Blue dot: CENTRE",x:50,y:50,seconds:2,showDot:true}
+  { title:"Side-to-side gaze", instruction:"Follow the blue dot with your eyes only. Hold each position until the dot moves to the next position.", phases:[
+    {target:"Blue dot: LEFT",x:15,y:50,seconds:30,showDot:true},
+    {target:"Blue dot: CENTRE",x:50,y:50,seconds:30,showDot:true},
+    {target:"Blue dot: RIGHT",x:85,y:50,seconds:30,showDot:true},
+    {target:"Blue dot: CENTRE",x:50,y:50,seconds:30,showDot:true}
   ] },
-  { title:"Gaze holding", instruction:"Keep your head still and hold your gaze on the blue dot in the centre.", phases:[{target:"Blue dot: CENTER — hold",x:50,y:50,seconds:8,showDot:true}] },
-  { title:"Head compensation", instruction:"Follow the blue dot LEFT, then RIGHT. Let your head move naturally with the target during this task.", phases:[
-    {target:"Blue dot: LEFT",x:18,y:50,seconds:4,showDot:true},
-    {target:"Blue dot: RIGHT",x:82,y:50,seconds:4,showDot:true}
+  { title:"Gaze holding", instruction:"Keep your head still and hold your gaze on the blue dot in the centre.", phases:[{target:"Blue dot: CENTER — hold",x:50,y:50,seconds:30,showDot:true}] },
+  { title:"Head compensation", instruction:"Follow the blue dot LEFT, then RIGHT. Let your head move naturally with the target during this task. Hold each position until the dot changes.", phases:[
+    {target:"Blue dot: LEFT",x:18,y:50,seconds:30,showDot:true},
+    {target:"Blue dot: RIGHT",x:82,y:50,seconds:30,showDot:true}
   ] },
-  { title:"Repeatability", instruction:"Repeat the gaze sequence: CENTRE, LEFT, RIGHT, then CENTRE. Follow the blue dot exactly.", phases:[
-    {target:"Blue dot: CENTRE",x:50,y:50,seconds:3,showDot:true},
-    {target:"Blue dot: LEFT",x:15,y:50,seconds:2,showDot:true},
-    {target:"Blue dot: RIGHT",x:85,y:50,seconds:2,showDot:true},
-    {target:"Blue dot: CENTRE",x:50,y:50,seconds:3,showDot:true}
+  { title:"Repeatability", instruction:"Repeat the gaze sequence: CENTRE, LEFT, RIGHT, then CENTRE. Follow the blue dot exactly and hold each position until it changes.", phases:[
+    {target:"Blue dot: CENTRE",x:50,y:50,seconds:30,showDot:true},
+    {target:"Blue dot: LEFT",x:15,y:50,seconds:30,showDot:true},
+    {target:"Blue dot: RIGHT",x:85,y:50,seconds:30,showDot:true},
+    {target:"Blue dot: CENTRE",x:50,y:50,seconds:30,showDot:true}
   ] }
 ];
 
@@ -63,7 +63,6 @@ let stream = null, landmarker = null, running = false, sessionActive = false;
 let stepIndex = -1, stepStarted = 0, lastVideoTime = -1;
 let mpFaceLandmarker = null, mpFileset = null, samples = [], stepSamples = [];
 let phase = 0, phaseStarted = 0, lastGazeX = null;
-let instructionOverlayUntil = 0;
 
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
 const sd = a => { if (a.length < 2) return 0; const m = mean(a); return Math.sqrt(mean(a.map(x => (x - m) ** 2))); };
@@ -139,7 +138,6 @@ function setStep(i){
   applyPhase(i,0);
   instructionOverlayText.textContent=s.instruction;
   instructionOverlay.classList.add("active");
-  instructionOverlayUntil=0;
   status.textContent="Step " + (i+1) + ": " + s.title + " — read the instructions, then click Continue.";
 }
 
@@ -174,7 +172,8 @@ function countdownFor(seconds){
 function collectStepData(f){const sample={t:(performance.now()-stepStarted)/1000,...f};samples.push({step:stepIndex,...sample});stepSamples.push(sample);}
 function finishStep(){
   playTimerBeep();
-if(stepIndex<STEPS.length-1){setStep(stepIndex+1);nextBtn.disabled=false;}else finishSession();}
+  if(stepIndex<STEPS.length-1){setStep(stepIndex+1);nextBtn.disabled=false;}else finishSession();
+}
 
 function loop(){
   if(!running||!landmarker)return;
@@ -187,7 +186,6 @@ function loop(){
       const f=eyeFeatures(face);
       updateLive(f);
       if(sessionActive&&stepIndex>=0){
-        // Do not collect or advance any phase while the instruction screen is waiting for Continue.
         if (instructionOverlay.classList.contains("active")) {
           status.textContent="Step " + (stepIndex+1) + ": " + STEPS[stepIndex].title + " — click Continue when you are ready.";
           requestAnimationFrame(loop);
@@ -274,7 +272,6 @@ function analyze(){
   const repeat=samples.filter(x=>x.step===7);
 
   const fatigueDrop=up?Math.max(0,base-(up.mean||base)):0;
-  const coganChange=downUp.length?Math.max(0,Math.max(...downUp.map(x=>x.open))-base):0;
   const curtainDrop=downUp.length?Math.max(0,base-downUp[downUp.length-1].open):0;
   const peekOpen=close?.max||0;
 
@@ -303,14 +300,13 @@ function analyze(){
 
   return [
     {name:"Fatigable ptosis",score:scoreObserved(fatigueDrop),percent:observationPercent(fatigueDrop),detail:`Eye-opening change during sustained upgaze: ${(fatigueDrop*100).toFixed(1)}%`},
-    {name:"Cogan's lid-twitch",score:scoreObserved(coganChange),percent:observationPercent(coganChange),detail:`Transient eye-opening change after the gaze transition: ${(coganChange*100).toFixed(1)}%`},
     {name:"Curtain sign (enhanced ptosis)",score:scoreObserved(curtainDrop),percent:observationPercent(curtainDrop),detail:`Change in eye opening after the downgaze phase: ${(curtainDrop*100).toFixed(1)}%`},
     {name:"Peek sign",score:scoreObserved(peekOpen),percent:observationPercent(peekOpen),detail:`Maximum residual eye opening during the closure task: ${(peekOpen*100).toFixed(1)}%`},
     {name:"Variable/asymmetric ophthalmoparesis",score:scoreObserved(gazeAsym),percent:observationPercent(gazeAsym),detail:`Difference between measured left/right gaze ranges: ${(gazeAsym*100).toFixed(1)}%`},
     {name:"Fatigable saccades",score:scoreObserved(saccadeFatigue),percent:observationPercent(saccadeFatigue),detail:`Change in average gaze-jump amplitude from the first to second half of the gaze task: ${(saccadeFatigue*100).toFixed(1)}%`},
     {name:"Gaze-holding instability",score:scoreObserved(holdInstability),percent:observationPercent(holdInstability),detail:`Standard deviation of horizontal gaze position while holding: ${holdInstability.toFixed(3)}`},
     {name:"Diplopia-related head tilt/turn compensation",score:scoreObserved(headComp),percent:observationPercent(headComp),detail:`Head-position excursion during the compensation task: ${(headComp*100).toFixed(1)}%`},
-    {name:"Inter-visit or intra-exam variability itself",score:scoreObserved(repeatVar),percent:observationPercent(repeatVar),detail:`Variation in eye opening during the repeatability task: ${(repeatVar*100).toFixed(1)}%`}
+    {name:"Intra-exam variability",score:scoreObserved(repeatVar),percent:observationPercent(repeatVar),detail:`Variation in eye opening during the repeatability task: ${(repeatVar*100).toFixed(1)}%`}
   ];
 }
 
