@@ -31,7 +31,7 @@ const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/face_landmark
 
 const STEPS = [
   { title:"Baseline", instruction:"Keep your head still and look at the blue dot in the centre.", phases:[{target:"Blue dot: CENTER",x:50,y:50,seconds:30,showDot:true}] },
-  { title:"Sustained upgaze", instruction:"Keep your head still and look only at the blue dot above centre. Keep your gaze there until the dot changes.", phases:[{target:"Blue dot: UP — keep your head still",x:50,y:18,seconds:30,showDot:true}] },
+  { title:"Sustained upgaze", instruction:"Keep your head still and look only at the blue dot above centre. Keep your gaze there until the dot changes.", phases:[{target:"Blue dot: UP — keep your head still",x:50,y:18,seconds:60,showDot:true}] },
   { title:"Vertical gaze movement", instruction:"Follow the blue dot with your eyes only. Hold your gaze at each position until the dot changes.", phases:[
     {target:"Blue dot: DOWN",x:50,y:82,seconds:30,showDot:true},
     {target:"Blue dot: UP",x:50,y:22,seconds:30,showDot:true}
@@ -261,7 +261,9 @@ function scoreLabel(value){
 }
 
 function analyze(){
+  const baselineOpen=rangeFor(0,"open");
   const up=rangeFor(1,"gazeY");
+  const upOpen=rangeFor(1,"open");
   const vertical=samples.filter(x=>x.step===2);
   const horizontal=samples.filter(x=>x.step===3);
   const hold=rangeFor(4,"gazeX");
@@ -269,6 +271,7 @@ function analyze(){
 
   const baseline=rangeFor(0,"gazeY")?.mean ?? 0;
   const upgazeChange=up ? Math.abs(up.mean-baseline) : 0;
+  const ptosisChange=(baselineOpen && upOpen) ? Math.max(0, (baselineOpen.mean-upOpen.min)/(baselineOpen.mean||1)) : 0;
 
   const verticalRange=vertical.length ? Math.abs(Math.max(...vertical.map(x=>x.gazeY))-Math.min(...vertical.map(x=>x.gazeY))) : 0;
   const horizontalRange=horizontal.length ? Math.abs(Math.max(...horizontal.map(x=>x.gazeX))-Math.min(...horizontal.map(x=>x.gazeX))) : 0;
@@ -291,6 +294,7 @@ function analyze(){
   const repeatVar=repeatGaze.length ? sd(repeatGaze) : 0;
 
   return [
+    {name:"Ptosis (eyelid-opening change during sustained upgaze)",score:scoreObserved(ptosisChange),percent:observationPercent(ptosisChange),detail:`Change in estimated eyelid opening during the 60-second sustained-upgaze task: ${(ptosisChange*100).toFixed(1)}%`},
     {name:"Sustained-gaze vertical change",score:scoreObserved(upgazeChange),percent:observationPercent(upgazeChange),detail:`Change in measured vertical gaze position during sustained upgaze: ${(upgazeChange*100).toFixed(1)}%`},
     {name:"Vertical gaze excursion",score:scoreObserved(verticalRange),percent:observationPercent(verticalRange),detail:`Measured vertical gaze range during the down/up task: ${(verticalRange*100).toFixed(1)}%`},
     {name:"Horizontal gaze excursion",score:scoreObserved(horizontalRange),percent:observationPercent(horizontalRange),detail:`Measured horizontal gaze range during the side-to-side task: ${(horizontalRange*100).toFixed(1)}%`},
