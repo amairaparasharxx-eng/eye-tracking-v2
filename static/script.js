@@ -31,7 +31,7 @@ const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/face_landmark
 
 const STEPS = [
   { title:"Baseline", instruction:"Keep your head still and look at the blue dot in the centre.", phases:[{target:"Blue dot: CENTER",x:50,y:50,seconds:5,showDot:true}] },
-  { title:"Sustained upgaze", instruction:"Keep your head still. Look only at the blue dot as it moves upward.", phases:[{target:"Blue dot: UP — keep your head still",x:50,y:18,seconds:8,showDot:true}] },
+  { title:"Sustained upgaze", instruction:"Keep your head still. Look only at the blue dot as it moves upward.", phases:[{target:"Blue dot: UP — keep your head still",x:50,y:18,seconds:60,showDot:true}] },
   { title:"Down then up", instruction:"Follow the blue dot. First look down; when it moves, look up.", phases:[
     {target:"Blue dot: DOWN",x:50,y:82,seconds:3,showDot:true},
     {target:"Blue dot: UP",x:50,y:22,seconds:4,showDot:true}
