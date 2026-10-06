@@ -31,19 +31,15 @@ const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/face_landmark
 
 const STEPS = [
   { title:"Baseline", instruction:"Keep your head still and look at the blue dot in the centre.", phases:[{target:"Blue dot: CENTER",x:50,y:50,seconds:30,showDot:true}] },
-  { title:"Sustained upgaze", instruction:"Keep your head still and look only at the blue dot above centre. Keep your gaze there until the dot changes.", phases:[{target:"Blue dot: UP — keep your head still",x:50,y:18,seconds:60,showDot:true}] },
-  { title:"Vertical gaze movement", instruction:"Follow the blue dot with your eyes only. Hold your gaze at each position until the dot changes.", phases:[
-    {target:"Blue dot: DOWN",x:50,y:82,seconds:30,showDot:true},
-    {target:"Blue dot: UP",x:50,y:22,seconds:30,showDot:true}
-  ] },
-  { title:"Horizontal gaze movement", instruction:"Follow the blue dot with your eyes only. Hold each position until the dot moves to the next position.", phases:[
+  { title:"Sustained upgaze — ptosis observation", instruction:"Keep your head still and look only at the blue dot above centre. Keep your gaze there for the full 60 seconds.", phases:[{target:"Blue dot: UP — keep your head still",x:50,y:18,seconds:60,showDot:true}] },
+  { title:"Horizontal saccadic movement", instruction:"Follow the blue dot with your eyes only. Repeat the left-centre-right-centre sequence as the dot changes. Keep your head still.", phases:[
     {target:"Blue dot: LEFT",x:15,y:50,seconds:30,showDot:true},
     {target:"Blue dot: CENTRE",x:50,y:50,seconds:30,showDot:true},
     {target:"Blue dot: RIGHT",x:85,y:50,seconds:30,showDot:true},
     {target:"Blue dot: CENTRE",x:50,y:50,seconds:30,showDot:true}
   ] },
   { title:"Gaze holding", instruction:"Keep your head still and hold your gaze on the blue dot in the centre.", phases:[{target:"Blue dot: CENTER — hold",x:50,y:50,seconds:30,showDot:true}] },
-  { title:"Repeatability", instruction:"Repeat the gaze sequence: CENTRE, LEFT, RIGHT, then CENTRE. Follow the blue dot exactly and hold each position until it changes.", phases:[
+  { title:"Head compensation and repeatability", instruction:"Repeat the gaze sequence: centre, left, right, then centre. Keep your eyes on the dot. The camera also records head movement during the task.", phases:[
     {target:"Blue dot: CENTRE",x:50,y:50,seconds:30,showDot:true},
     {target:"Blue dot: LEFT",x:15,y:50,seconds:30,showDot:true},
     {target:"Blue dot: RIGHT",x:85,y:50,seconds:30,showDot:true},
@@ -261,20 +257,13 @@ function scoreLabel(value){
 }
 
 function analyze(){
-  const baselineOpen=rangeFor(0,"open");
-  const up=rangeFor(1,"gazeY");
-  const upOpen=rangeFor(1,"open");
-  const vertical=samples.filter(x=>x.step===2);
-  const horizontal=samples.filter(x=>x.step===3);
-  const hold=rangeFor(4,"gazeX");
-  const repeat=samples.filter(x=>x.step===5);
+  const baseline=rangeFor(0,"open");
+  const up=rangeFor(1,"open");
+  const horizontal=samples.filter(x=>x.step===2);
+  const hold=rangeFor(3,"gazeX");
+  const repeat=samples.filter(x=>x.step===4);
 
-  const baseline=rangeFor(0,"gazeY")?.mean ?? 0;
-  const upgazeChange=up ? Math.abs(up.mean-baseline) : 0;
-  const ptosisChange=(baselineOpen && upOpen) ? Math.max(0, (baselineOpen.mean-upOpen.min)/(baselineOpen.mean||1)) : 0;
-
-  const verticalRange=vertical.length ? Math.abs(Math.max(...vertical.map(x=>x.gazeY))-Math.min(...vertical.map(x=>x.gazeY))) : 0;
-  const horizontalRange=horizontal.length ? Math.abs(Math.max(...horizontal.map(x=>x.gazeX))-Math.min(...horizontal.map(x=>x.gazeX))) : 0;
+  const ptosisChange=(baseline&&up) ? Math.max(0,(baseline.mean-up.min)/(baseline.mean||1)) : 0;
 
   const saccades=[];
   for(let i=1;i<horizontal.length;i++){
@@ -293,14 +282,14 @@ function analyze(){
   const repeatGaze=repeat.map(x=>x.gazeX);
   const repeatVar=repeatGaze.length ? sd(repeatGaze) : 0;
 
+  const headComp=repeat.length ? mean(repeat.map(x=>Math.hypot(x.headX-.5,x.headY-.5))) : 0;
+
   return [
     {name:"Ptosis (eyelid-opening change during sustained upgaze)",score:scoreObserved(ptosisChange),percent:observationPercent(ptosisChange),detail:`Change in estimated eyelid opening during the 60-second sustained-upgaze task: ${(ptosisChange*100).toFixed(1)}%`},
-    {name:"Sustained-gaze vertical change",score:scoreObserved(upgazeChange),percent:observationPercent(upgazeChange),detail:`Change in measured vertical gaze position during sustained upgaze: ${(upgazeChange*100).toFixed(1)}%`},
-    {name:"Vertical gaze excursion",score:scoreObserved(verticalRange),percent:observationPercent(verticalRange),detail:`Measured vertical gaze range during the down/up task: ${(verticalRange*100).toFixed(1)}%`},
-    {name:"Horizontal gaze excursion",score:scoreObserved(horizontalRange),percent:observationPercent(horizontalRange),detail:`Measured horizontal gaze range during the side-to-side task: ${(horizontalRange*100).toFixed(1)}%`},
-    {name:"Saccadic movement change over time",score:scoreObserved(saccadeChange),percent:observationPercent(saccadeChange),detail:`Relative change in measured gaze-jump amplitude between the first and second portions of the horizontal task: ${(saccadeChange*100).toFixed(1)}%`},
+    {name:"Fatigable saccadic movement",score:scoreObserved(saccadeChange),percent:observationPercent(saccadeChange),detail:`Relative change in measured gaze-jump amplitude between the first and second portions of the horizontal task: ${(saccadeChange*100).toFixed(1)}%`},
     {name:"Gaze-holding instability",score:scoreObserved(holdInstability),percent:observationPercent(holdInstability),detail:`Standard deviation of measured horizontal gaze position while holding: ${holdInstability.toFixed(3)}`},
-    {name:"Intra-exam gaze repeatability",score:scoreObserved(repeatVar),percent:observationPercent(repeatVar),detail:`Variation in measured horizontal gaze position during the repeatability task: ${repeatVar.toFixed(3)}`}
+    {name:"Intra-exam variability / repeatability",score:scoreObserved(repeatVar),percent:observationPercent(repeatVar),detail:`Variation in measured horizontal gaze position during the repeated gaze sequence: ${repeatVar.toFixed(3)}`},
+    {name:"Diplopia-related head tilt/turn compensation (observational)",score:scoreObserved(headComp),percent:observationPercent(headComp),detail:`Measured head-position deviation from centre during the repeatability sequence: ${(headComp*100).toFixed(1)}%. This does not establish diplopia.`}
   ];
 }
 
