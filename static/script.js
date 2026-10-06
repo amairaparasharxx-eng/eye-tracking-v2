@@ -111,14 +111,21 @@ async function createLandmarker(){
   catch(e){console.warn("GPU initialization failed; using CPU",e);return await mpFaceLandmarker.createFromOptions(mpFileset,{baseOptions:{modelAssetPath:MODEL_URL,delegate:"CPU"},runningMode:"VIDEO",numFaces:1});}
 }
 
+function positionGazeTarget(x, y) {
+  const width = video.clientWidth || video.offsetWidth;
+  const height = video.clientHeight || video.offsetHeight;
+  if (!width || !height) return;
+  gazeTarget.style.left = (width * x / 100) + "px";
+  gazeTarget.style.top = (height * y / 100) + "px";
+}
+
 function applyPhase(step, phaseIndex) {
   const s = STEPS[step];
   const p = s.phases[phaseIndex];
   if (!p) return;
   target.textContent = p.target;
   instruction.textContent = s.instruction;
-  gazeTarget.style.left = p.x + "%";
-  gazeTarget.style.top = p.y + "%";
+  positionGazeTarget(p.x, p.y);
   gazeTarget.classList.toggle("active", !!p.showDot);
 }
 
