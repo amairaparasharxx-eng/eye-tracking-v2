@@ -31,18 +31,18 @@ const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/face_landmark
 
 const STEPS = [
   { title:"Baseline", instruction:"Keep your head still and look at the blue dot in the centre.", phases:[{target:"Blue dot: CENTER",x:50,y:50,seconds:30,showDot:true}] },
-  { title:"Sustained upgaze — ptosis observation", instruction:"Keep your head still and look only at the blue dot above centre. Keep your gaze there for the full 60 seconds.", phases:[{target:"Blue dot: UP — keep your head still",x:50,y:18,seconds:60,showDot:true}] },
-  { title:"Horizontal saccadic movement", instruction:"Follow the blue dot with your eyes only. Repeat the left-centre-right-centre sequence as the dot changes. Keep your head still.", phases:[
-    {target:"Blue dot: LEFT",x:15,y:50,seconds:30,showDot:true},
+  { title:"Sustained upgaze — ptosis observation", instruction:"Keep your head still and look only at the upward arrow. Keep your gaze there for the full 60 seconds.", phases:[{target:"Arrow: UP — keep your head still",x:50,y:18,seconds:60,direction:"up"}] },
+  { title:"Horizontal saccadic movement", instruction:"Follow the arrows with your eyes only. Use the blue dot only when the target is centred. Keep your head still.", phases:[
+    {target:"Arrow: LEFT",x:15,y:50,seconds:30,direction:"left"},
     {target:"Blue dot: CENTRE",x:50,y:50,seconds:30,showDot:true},
-    {target:"Blue dot: RIGHT",x:85,y:50,seconds:30,showDot:true},
+    {target:"Arrow: RIGHT",x:85,y:50,seconds:30,direction:"right"},
     {target:"Blue dot: CENTRE",x:50,y:50,seconds:30,showDot:true}
   ] },
   { title:"Gaze holding", instruction:"Keep your head still and hold your gaze on the blue dot in the centre.", phases:[{target:"Blue dot: CENTER — hold",x:50,y:50,seconds:30,showDot:true}] },
-  { title:"Head compensation and repeatability", instruction:"Repeat the gaze sequence: centre, left, right, then centre. Keep your eyes on the dot. The camera also records head movement during the task.", phases:[
+  { title:"Head compensation and repeatability", instruction:"Repeat the gaze sequence: centre, left, right, then centre. Follow the arrows for left and right, and the blue dot when centred.", phases:[
     {target:"Blue dot: CENTRE",x:50,y:50,seconds:30,showDot:true},
-    {target:"Blue dot: LEFT",x:15,y:50,seconds:30,showDot:true},
-    {target:"Blue dot: RIGHT",x:85,y:50,seconds:30,showDot:true},
+    {target:"Arrow: LEFT",x:15,y:50,seconds:30,direction:"left"},
+    {target:"Arrow: RIGHT",x:85,y:50,seconds:30,direction:"right"},
     {target:"Blue dot: CENTRE",x:50,y:50,seconds:30,showDot:true}
   ] }
 ];
@@ -110,7 +110,16 @@ function applyPhase(step, phaseIndex) {
   target.textContent = p.target;
   instruction.textContent = s.instruction;
   positionGazeTarget(p.x, p.y);
-  gazeTarget.classList.toggle("active", !!p.showDot);
+  gazeTarget.classList.remove("arrow-left","arrow-right","arrow-up","center-dot");
+  if (p.direction) {
+    gazeTarget.textContent = p.direction === "left" ? "←" : p.direction === "right" ? "→" : "↑";
+    gazeTarget.classList.add("active", "arrow-" + p.direction);
+  } else if (p.showDot) {
+    gazeTarget.textContent = "";
+    gazeTarget.classList.add("active", "center-dot");
+  } else {
+    gazeTarget.classList.remove("active");
+  }
 }
 
 function setStep(i){
