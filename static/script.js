@@ -75,13 +75,9 @@ function drawLandmarks(result) {
 
 function updateLive(f){
   document.getElementById("eye-opening").textContent=(f.open*100).toFixed(1)+"%";
-  document.getElementById("asymmetry").textContent=(f.asym*100).toFixed(1)+"%";
   document.getElementById("gaze-x").textContent=f.gazeX.toFixed(2);
-  document.getElementById("gaze-y").textContent=f.gazeY.toFixed(2);
-  document.getElementById("yaw").textContent=((f.headX-.5)*100).toFixed(1)+"%";
   document.getElementById("saccades").textContent=lastGazeX===null?"—":Math.abs(f.gazeX-lastGazeX).toFixed(3);
-  document.getElementById("pitch").textContent=((f.headY-.5)*100).toFixed(1)+"%";
-  document.getElementById("roll").textContent=f.asym.toFixed(2);
+  document.getElementById("yaw").textContent=((f.headX-.5)*100).toFixed(1)+"%";
   document.getElementById("quality").textContent="Tracking OK";
   lastGazeX=f.gazeX;
 }
