@@ -156,6 +156,27 @@ function playTimerBeep(){
   }
 }
 
+function playPhaseBeep(){
+  try{
+    audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+    if(audioContext.state === "suspended") audioContext.resume();
+    const now = audioContext.currentTime;
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.type = "sine";
+    osc.frequency.value = 660;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+    osc.start(now);
+    osc.stop(now + 0.12);
+  }catch(e){
+    console.warn("Phase sound could not play:", e);
+  }
+}
+
 function countdownFor(seconds){
   const elapsed=(performance.now()-phaseStarted)/1000, left=Math.max(0,Math.ceil(seconds-elapsed));
   if(left>0){countdown.textContent=left;countdown.classList.remove("hidden");}else countdown.classList.add("hidden"); return elapsed>=seconds;
@@ -189,6 +210,7 @@ function loop(){
           if(phase < s.phases.length-1){
             phase += 1;
             phaseStarted=performance.now();
+            playPhaseBeep();
             applyPhase(stepIndex,phase);
           } else {
             finishStep();
