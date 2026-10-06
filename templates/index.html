@@ -21,7 +21,7 @@
       <div class="session-badge" id="step-badge">Ready</div>
     </header>
 
-    <section class="card safety-card"><strong>Important:</strong> This is a research/prototype tool, not a diagnostic test. Camera measurements can be affected by lighting, camera position, face angle, glasses, and tracking errors. Several clinical signs require a clinician's examination and cannot be confirmed by a webcam alone.</section>
+    <section class="card safety-card"><strong>Important:</strong> This is a research/prototype tool, not a diagnostic test. It measures observable eye-position and eye-movement patterns from the camera. It does not confirm clinical signs or diagnose MG.</section>
 
     <section class="card consent-card">
       <h2>Consent for this prototype session</h2>
@@ -47,22 +47,20 @@
     <section class="card observation-card">
       <div class="section-heading"><div><p class="eyebrow">LIVE OBSERVATIONS</p><h2>Observations being checked</h2></div><span class="live-dot" id="live-dot">Waiting</span></div>
       <div class="metrics">
-        <div><span>1. Fatigable ptosis</span><strong id="eye-opening">—</strong></div>
-        <div><span>2. Curtain sign (enhanced ptosis)</span><strong id="asymmetry">—</strong></div>
-        <div><span>3. Peek sign</span><strong id="gaze-x">—</strong></div>
-        <div><span>4. Variable/asymmetric ophthalmoparesis</span><strong id="gaze-y">—</strong></div>
-        <div><span>5. Fatigable saccades</span><strong id="yaw">—</strong></div>
-        <div><span>6. Gaze-holding instability</span><strong id="saccades">—</strong></div>
-        <div><span>7. Diplopia-related head tilt/turn compensation</span><strong id="pitch">—</strong></div>
-        <div><span>8. Intra-exam variability</span><strong id="roll">—</strong></div>
+        <div><span>1. Sustained-gaze vertical change</span><strong id="eye-opening">—</strong></div>
+        <div><span>2. Vertical gaze excursion</span><strong id="asymmetry">—</strong></div>
+        <div><span>3. Horizontal gaze excursion</span><strong id="gaze-x">—</strong></div>
+        <div><span>4. Saccadic movement change over time</span><strong id="gaze-y">—</strong></div>
+        <div><span>5. Gaze-holding instability</span><strong id="yaw">—</strong></div>
+        <div><span>6. Intra-exam gaze repeatability</span><strong id="saccades">—</strong></div>
       </div>
     </section>
 
     <section id="results" class="card results-card hidden">
-      <div class="section-heading"><div><p class="eyebrow">SESSION COMPLETE</p><h2>Observed / not observed summary</h2></div><span id="total-score" class="score-pill">0 / 80</span></div>
+      <div class="section-heading"><div><p class="eyebrow">SESSION COMPLETE</p><h2>Observed / not observed summary</h2></div><span id="total-score" class="score-pill">0 / 60</span></div>
       <div class="summary-layout"><div class="pie-wrap"><div id="pie" class="pie"></div><div class="pie-center"><strong id="observed-count">0</strong><span>observed</span></div></div><div class="legend"><div><span class="legend-dot observed"></span>Observed <strong id="legend-observed">0</strong></div><div><span class="legend-dot not-observed"></span>Not observed <strong id="legend-not-observed">0</strong></div></div></div>
       <div id="result-list" class="result-list"></div>
-      <p class="result-note"><strong>Scoring:</strong> 0 = none, 5 = not prominent, 10 = prominent. These are prototype observation levels only, not a validated clinical score or probability of disease. Inter-visit variability cannot be determined from one session; the final item therefore reports intra-exam repeatability.</p>
+      <p class="result-note"><strong>Scoring:</strong> 0 = not observed, 5 = intermediate observation level, 10 = prominent observation level. These are prototype observation levels only, not a validated clinical score or probability of disease. Inter-visit variability cannot be determined from one session; the final item therefore reports intra-exam repeatability.</p>
       <button id="restart" class="primary">Run another session</button>
 
       <div class="import-box">
