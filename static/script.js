@@ -282,14 +282,11 @@ function analyze(){
   const repeatGaze=repeat.map(x=>x.gazeX);
   const repeatVar=repeatGaze.length ? sd(repeatGaze) : 0;
 
-  const headComp=repeat.length ? mean(repeat.map(x=>Math.hypot(x.headX-.5,x.headY-.5))) : 0;
-
   return [
     {name:"Ptosis (eyelid-opening change during sustained upgaze)",score:scoreObserved(ptosisChange),percent:observationPercent(ptosisChange),detail:`Change in estimated eyelid opening during the 60-second sustained-upgaze task: ${(ptosisChange*100).toFixed(1)}%`},
     {name:"Fatigable saccadic movement",score:scoreObserved(saccadeChange),percent:observationPercent(saccadeChange),detail:`Relative change in measured gaze-jump amplitude between the first and second portions of the horizontal task: ${(saccadeChange*100).toFixed(1)}%`},
     {name:"Gaze-holding instability",score:scoreObserved(holdInstability),percent:observationPercent(holdInstability),detail:`Standard deviation of measured horizontal gaze position while holding: ${holdInstability.toFixed(3)}`},
     {name:"Intra-exam variability / repeatability",score:scoreObserved(repeatVar),percent:observationPercent(repeatVar),detail:`Variation in measured horizontal gaze position during the repeated gaze sequence: ${repeatVar.toFixed(3)}`},
-    {name:"Diplopia-related head tilt/turn compensation (observational)",score:scoreObserved(headComp),percent:observationPercent(headComp),detail:`Measured head-position deviation from centre during the repeatability sequence: ${(headComp*100).toFixed(1)}%. This does not establish diplopia.`}
   ];
 }
 
