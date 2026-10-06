@@ -234,6 +234,18 @@ function loop(){
   requestAnimationFrame(loop);
 }
 
+async function submitContactInfo(){
+  const contactInput=document.getElementById("contact-info");
+  const contact=contactInput?.value.trim();
+  if(!contact)return;
+  try{
+    const response=await fetch("/api/contact",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contact})});
+    if(!response.ok) throw new Error("Contact submission failed");
+  }catch(e){
+    console.warn("Contact information could not be submitted:",e);
+  }
+}
+
 async function startCamera(){
   if(running)return;
   if(!eyeConsent?.checked || !eyeDiagnosticConsent?.checked){
@@ -241,6 +253,7 @@ async function startCamera(){
     return;
   }
   startBtn.disabled=true; status.textContent="Requesting camera access…";
+  await submitContactInfo();
   try{
     if(!navigator.mediaDevices?.getUserMedia)throw new Error("Camera access is unavailable in this browser.");
     stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},facingMode:"user"},audio:false});
