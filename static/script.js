@@ -31,26 +31,18 @@ const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/face_landmark
 
 const STEPS = [
   { title:"Baseline", instruction:"Keep your head still and look at the blue dot in the centre.", phases:[{target:"Blue dot: CENTER",x:50,y:50,seconds:30,showDot:true}] },
-  { title:"Sustained upgaze", instruction:"Keep your head still. Look only at the blue dot above centre.", phases:[{target:"Blue dot: UP — keep your head still",x:50,y:18,seconds:30,showDot:true}] },
-  { title:"Down then up", instruction:"Follow the blue dot with your eyes only. Hold your gaze at each position until the dot changes.", phases:[
+  { title:"Sustained upgaze", instruction:"Keep your head still and look only at the blue dot above centre. Keep your gaze there until the dot changes.", phases:[{target:"Blue dot: UP — keep your head still",x:50,y:18,seconds:30,showDot:true}] },
+  { title:"Vertical gaze movement", instruction:"Follow the blue dot with your eyes only. Hold your gaze at each position until the dot changes.", phases:[
     {target:"Blue dot: DOWN",x:50,y:82,seconds:30,showDot:true},
     {target:"Blue dot: UP",x:50,y:22,seconds:30,showDot:true}
   ] },
-  { title:"Firm eye closure", instruction:"Close both eyes gently but firmly while the dot is hidden. When the dot returns to the centre, open your eyes and keep looking at it.", phases:[
-    {target:"Close both eyes — blue dot hidden",x:50,y:50,seconds:30,showDot:false},
-    {target:"Blue dot: CENTER — open your eyes",x:50,y:50,seconds:30,showDot:true}
-  ] },
-  { title:"Side-to-side gaze", instruction:"Follow the blue dot with your eyes only. Hold each position until the dot moves to the next position.", phases:[
+  { title:"Horizontal gaze movement", instruction:"Follow the blue dot with your eyes only. Hold each position until the dot moves to the next position.", phases:[
     {target:"Blue dot: LEFT",x:15,y:50,seconds:30,showDot:true},
     {target:"Blue dot: CENTRE",x:50,y:50,seconds:30,showDot:true},
     {target:"Blue dot: RIGHT",x:85,y:50,seconds:30,showDot:true},
     {target:"Blue dot: CENTRE",x:50,y:50,seconds:30,showDot:true}
   ] },
   { title:"Gaze holding", instruction:"Keep your head still and hold your gaze on the blue dot in the centre.", phases:[{target:"Blue dot: CENTER — hold",x:50,y:50,seconds:30,showDot:true}] },
-  { title:"Head compensation", instruction:"Follow the blue dot LEFT, then RIGHT. Let your head move naturally with the target during this task. Hold each position until the dot changes.", phases:[
-    {target:"Blue dot: LEFT",x:18,y:50,seconds:30,showDot:true},
-    {target:"Blue dot: RIGHT",x:82,y:50,seconds:30,showDot:true}
-  ] },
   { title:"Repeatability", instruction:"Repeat the gaze sequence: CENTRE, LEFT, RIGHT, then CENTRE. Follow the blue dot exactly and hold each position until it changes.", phases:[
     {target:"Blue dot: CENTRE",x:50,y:50,seconds:30,showDot:true},
     {target:"Blue dot: LEFT",x:15,y:50,seconds:30,showDot:true},
@@ -269,51 +261,42 @@ function scoreLabel(value){
 }
 
 function analyze(){
-  const base=rangeFor(0,"open")?.mean||mean(samples.map(x=>x.open));
-  const up=rangeFor(1,"open");
-  const downUp=samples.filter(x=>x.step===2);
-  const close=rangeFor(3,"open");
-  const side=samples.filter(x=>x.step===4);
-  const hold=rangeFor(5,"gazeX");
-  const comp=rangeFor(6,"headX");
-  const repeat=samples.filter(x=>x.step===7);
+  const up=rangeFor(1,"gazeY");
+  const vertical=samples.filter(x=>x.step===2);
+  const horizontal=samples.filter(x=>x.step===3);
+  const hold=rangeFor(4,"gazeX");
+  const repeat=samples.filter(x=>x.step===5);
 
-  const fatigueDrop=up?Math.max(0,base-(up.mean||base)):0;
-  const curtainDrop=downUp.length?Math.max(0,base-downUp[downUp.length-1].open):0;
-  const peekOpen=close?.max||0;
+  const baseline=rangeFor(0,"gazeY")?.mean ?? 0;
+  const upgazeChange=up ? Math.abs(up.mean-baseline) : 0;
 
-  const left=side.filter(x=>x.gazeX<.45).map(x=>x.gazeX);
-  const right=side.filter(x=>x.gazeX>.55).map(x=>x.gazeX);
-  const gazeRangeL=left.length?Math.abs(Math.min(...left)-.5):0;
-  const gazeRangeR=right.length?Math.abs(Math.max(...right)-.5):0;
-  const gazeAsym=Math.abs(gazeRangeL-gazeRangeR);
+  const verticalRange=vertical.length ? Math.abs(Math.max(...vertical.map(x=>x.gazeY))-Math.min(...vertical.map(x=>x.gazeY))) : 0;
+  const horizontalRange=horizontal.length ? Math.abs(Math.max(...horizontal.map(x=>x.gazeX))-Math.min(...horizontal.map(x=>x.gazeX))) : 0;
 
-  const saccadeSteps=[];
-  for(let i=1;i<side.length;i++){
-    const dt=Math.max(.016,side[i].t-side[i-1].t);
-    const delta=Math.abs(side[i].gazeX-side[i-1].gazeX);
-    if(delta>.025) saccadeSteps.push({delta,velocity:delta/dt,t:side[i].t});
+  const saccades=[];
+  for(let i=1;i<horizontal.length;i++){
+    const dt=Math.max(.016,horizontal[i].t-horizontal[i-1].t);
+    const delta=Math.abs(horizontal[i].gazeX-horizontal[i-1].gazeX);
+    if(delta>.025) saccades.push({delta,velocity:delta/dt,t:horizontal[i].t});
   }
-  const midpoint=side.length?side[Math.floor(side.length/2)].t:0;
-  const firstSaccades=saccadeSteps.filter(x=>x.t<=midpoint);
-  const secondSaccades=saccadeSteps.filter(x=>x.t>midpoint);
-  const firstAmp=firstSaccades.length?mean(firstSaccades.map(x=>x.delta)):0;
-  const secondAmp=secondSaccades.length?mean(secondSaccades.map(x=>x.delta)):0;
-  const saccadeFatigue=firstAmp>0?Math.max(0,(firstAmp-secondAmp)/firstAmp):0;
+  const midpoint=horizontal.length ? horizontal[Math.floor(horizontal.length/2)].t : 0;
+  const first=saccades.filter(x=>x.t<=midpoint);
+  const second=saccades.filter(x=>x.t>midpoint);
+  const firstAmp=first.length ? mean(first.map(x=>x.delta)) : 0;
+  const secondAmp=second.length ? mean(second.map(x=>x.delta)) : 0;
+  const saccadeChange=firstAmp>0 ? Math.abs(firstAmp-secondAmp)/firstAmp : 0;
 
   const holdInstability=hold?.sd||0;
-  const headComp=comp?Math.abs(comp.max-comp.min):0;
-  const repeatVar=repeat.length?sd(repeat.map(x=>x.open)):0;
+  const repeatGaze=repeat.map(x=>x.gazeX);
+  const repeatVar=repeatGaze.length ? sd(repeatGaze) : 0;
 
   return [
-    {name:"Fatigable ptosis",score:scoreObserved(fatigueDrop),percent:observationPercent(fatigueDrop),detail:`Eye-opening change during sustained upgaze: ${(fatigueDrop*100).toFixed(1)}%`},
-    {name:"Curtain sign (enhanced ptosis)",score:scoreObserved(curtainDrop),percent:observationPercent(curtainDrop),detail:`Change in eye opening after the downgaze phase: ${(curtainDrop*100).toFixed(1)}%`},
-    {name:"Peek sign",score:scoreObserved(peekOpen),percent:observationPercent(peekOpen),detail:`Maximum residual eye opening during the closure task: ${(peekOpen*100).toFixed(1)}%`},
-    {name:"Variable/asymmetric ophthalmoparesis",score:scoreObserved(gazeAsym),percent:observationPercent(gazeAsym),detail:`Difference between measured left/right gaze ranges: ${(gazeAsym*100).toFixed(1)}%`},
-    {name:"Fatigable saccades",score:scoreObserved(saccadeFatigue),percent:observationPercent(saccadeFatigue),detail:`Change in average gaze-jump amplitude from the first to second half of the gaze task: ${(saccadeFatigue*100).toFixed(1)}%`},
-    {name:"Gaze-holding instability",score:scoreObserved(holdInstability),percent:observationPercent(holdInstability),detail:`Standard deviation of horizontal gaze position while holding: ${holdInstability.toFixed(3)}`},
-    {name:"Diplopia-related head tilt/turn compensation",score:scoreObserved(headComp),percent:observationPercent(headComp),detail:`Head-position excursion during the compensation task: ${(headComp*100).toFixed(1)}%`},
-    {name:"Intra-exam variability",score:scoreObserved(repeatVar),percent:observationPercent(repeatVar),detail:`Variation in eye opening during the repeatability task: ${(repeatVar*100).toFixed(1)}%`}
+    {name:"Sustained-gaze vertical change",score:scoreObserved(upgazeChange),percent:observationPercent(upgazeChange),detail:`Change in measured vertical gaze position during sustained upgaze: ${(upgazeChange*100).toFixed(1)}%`},
+    {name:"Vertical gaze excursion",score:scoreObserved(verticalRange),percent:observationPercent(verticalRange),detail:`Measured vertical gaze range during the down/up task: ${(verticalRange*100).toFixed(1)}%`},
+    {name:"Horizontal gaze excursion",score:scoreObserved(horizontalRange),percent:observationPercent(horizontalRange),detail:`Measured horizontal gaze range during the side-to-side task: ${(horizontalRange*100).toFixed(1)}%`},
+    {name:"Saccadic movement change over time",score:scoreObserved(saccadeChange),percent:observationPercent(saccadeChange),detail:`Relative change in measured gaze-jump amplitude between the first and second portions of the horizontal task: ${(saccadeChange*100).toFixed(1)}%`},
+    {name:"Gaze-holding instability",score:scoreObserved(holdInstability),percent:observationPercent(holdInstability),detail:`Standard deviation of measured horizontal gaze position while holding: ${holdInstability.toFixed(3)}`},
+    {name:"Intra-exam gaze repeatability",score:scoreObserved(repeatVar),percent:observationPercent(repeatVar),detail:`Variation in measured horizontal gaze position during the repeatability task: ${repeatVar.toFixed(3)}`}
   ];
 }
 
