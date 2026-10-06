@@ -15,6 +15,7 @@ const countdown = document.getElementById("countdown");
 const gazeTarget = document.getElementById("gaze-target");
 const instructionOverlay = document.getElementById("instruction-overlay");
 const instructionOverlayText = document.getElementById("instruction-overlay-text");
+const instructionContinueBtn = document.getElementById("instruction-continue");
 const eyeConsent = document.getElementById("eye-consent");
 const eyeSummaryConsent = document.getElementById("eye-summary-consent");
 const eyeDiagnosticConsent = document.getElementById("eye-diagnostic-consent");
@@ -130,17 +131,16 @@ function setStep(i){
   progressText.textContent=(i+1) + " / " + STEPS.length;
   progressBar.style.width=(i/STEPS.length*100) + "%";
   stepBadge.textContent="Step " + (i+1);
-  nextBtn.textContent=i===0?"Start guided session":(i===STEPS.length-1?"Finish session":"Next step");
   stepSamples=[];
   phase=0;
-  phaseStarted=performance.now();
-  stepStarted=performance.now();
+  phaseStarted=0;
+  stepStarted=0;
   countdown.classList.add("hidden");
   applyPhase(i,0);
   instructionOverlayText.textContent=s.instruction;
   instructionOverlay.classList.add("active");
-  instructionOverlayUntil=performance.now()+3000;
-  status.textContent="Step " + (i+1) + ": " + s.title;
+  instructionOverlayUntil=0;
+  status.textContent="Step " + (i+1) + ": " + s.title + " — read the instructions, then click Continue.";
 }
 
 function countdownFor(seconds){
@@ -152,9 +152,6 @@ function finishStep(){if(stepIndex<STEPS.length-1){setStep(stepIndex+1);nextBtn.
 
 function loop(){
   if(!running||!landmarker)return;
-  if(instructionOverlay?.classList.contains("active") && performance.now()>=instructionOverlayUntil){
-    instructionOverlay.classList.remove("active");
-  }
   if(video.readyState>=2&&video.currentTime!==lastVideoTime){
     lastVideoTime=video.currentTime;
     const result=landmarker.detectForVideo(video,performance.now());
@@ -164,6 +161,12 @@ function loop(){
       const f=eyeFeatures(face);
       updateLive(f);
       if(sessionActive&&stepIndex>=0){
+        // Do not collect or advance any phase while the instruction screen is waiting for Continue.
+        if (instructionOverlay.classList.contains("active")) {
+          status.textContent="Step " + (stepIndex+1) + ": " + STEPS[stepIndex].title + " — click Continue when you are ready.";
+          requestAnimationFrame(loop);
+          return;
+        }
         collectStepData(f);
         const s=STEPS[stepIndex];
         const currentPhase=s.phases[phase];
@@ -202,7 +205,14 @@ async function startCamera(){
     status.textContent=`Could not start camera: ${err.message||"allow camera access and try again."}`;
   }
 }
-function startSession(){if(!running)return;samples=[];lastGazeX=null;sessionActive=true;nextBtn.disabled=true;setStep(0);}
+function startSession(){
+  if(!running)return;
+  samples=[];
+  lastGazeX=null;
+  sessionActive=true;
+  nextBtn.disabled=true;
+  setStep(0);
+}
 
 function finishSession(){
   sessionActive=false;nextBtn.disabled=true;progressBar.style.width="100%";progressText.textContent=`${STEPS.length} / ${STEPS.length}`;stepBadge.textContent="Complete";
@@ -356,6 +366,14 @@ function combineMgSummary(){
 function stopCamera(){running=false;gazeTarget?.classList.remove("active");instructionOverlay?.classList.remove("active");sessionActive=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;startBtn.disabled=false;nextBtn.disabled=true;stopBtn.disabled=true;status.textContent="Camera is off.";ctx.clearRect(0,0,canvas.width,canvas.height);}
 startBtn.addEventListener("click",startCamera);
 nextBtn.addEventListener("click",startSession);
+instructionContinueBtn?.addEventListener("click",()=>{
+  if(!sessionActive || stepIndex<0)return;
+  instructionOverlay.classList.remove("active");
+  phaseStarted=performance.now();
+  stepStarted=performance.now();
+  countdown.classList.add("hidden");
+  status.textContent="Step " + (stepIndex+1) + ": " + STEPS[stepIndex].title + " — collecting data.";
+});
 stopBtn.addEventListener("click",stopCamera);
 document.getElementById("restart").addEventListener("click",()=>window.location.reload());
 combineMgButton?.addEventListener("click",combineMgSummary);
