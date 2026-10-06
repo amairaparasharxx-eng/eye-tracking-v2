@@ -32,7 +32,7 @@ const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/face_landmark
 const STEPS = [
   { title:"Baseline", instruction:"Keep your head still and look at the blue dot in the centre.", phases:[{target:"Blue dot: CENTER",x:50,y:50,seconds:30,showDot:true}] },
   { title:"Sustained upgaze — ptosis observation", instruction:"Keep your head still and look only at the upward arrow. Keep your gaze there for the full 60 seconds.", phases:[{target:"Arrow: UP — keep your head still",x:50,y:18,seconds:60,direction:"up"}] },
-  { title:"Horizontal saccadic movement", instruction:"Follow the arrows with your eyes only. Use the blue dot only when the target is centred. Keep your head still.", phases:[
+  { title:"Horizontal saccadic movement", instruction:"Look in the direction of the arrows and focus on the dots. Keep your head still.", phases:[
     {target:"Arrow: LEFT",x:15,y:50,seconds:30,direction:"left"},
     {target:"Blue dot: CENTRE",x:50,y:50,seconds:30,showDot:true},
     {target:"Arrow: RIGHT",x:85,y:50,seconds:30,direction:"right"},
