@@ -1,4 +1,7 @@
 from flask import Flask, jsonify, render_template, request
+from datetime import datetime, timezone
+from pathlib import Path
+import json
 import numpy as np
 
 from metrics import measure_frame
@@ -15,6 +18,27 @@ def index():
 @app.get("/health")
 def health():
     return jsonify({"status": "ok"})
+
+
+@app.post("/api/contact")
+def api_contact():
+    data = request.get_json(silent=True) or {}
+    contact = str(data.get("contact") or "").strip()
+    if not contact:
+        return jsonify({"ok": True, "saved": False})
+    if len(contact) > 254:
+        return jsonify({"error": "Contact information is too long."}), 400
+
+    record = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "contact": contact,
+    }
+    try:
+        with Path("contact_submissions.jsonl").open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        return jsonify({"ok": True, "saved": True})
+    except OSError:
+        return jsonify({"error": "Could not save contact information."}), 500
 
 
 @app.post("/api/measure")
